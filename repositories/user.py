@@ -21,6 +21,18 @@ class UserRepository(Repository[User]):
         query = select(User).where(User.email==email)
         result = await self._db.execute(query)
         return result.scalar_one_or_none()
+    
+    async def get_by_name(self,username:str) -> User | None:
+        '''
+        Docstring for get_by_name
+        
+        :type username: str
+        :return: the users with the same username
+        :rtype: Sequence[User]
+        '''
+        query = select(User).where(User.username==username)
+        result = await self._db.execute(query)
+        return result.scalar_one_or_none()
 
     async def _try_get_instance(self, instance: User) -> User | None:
         db_instance = await self.get_by_id(str(instance.id))

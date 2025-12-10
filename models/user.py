@@ -13,6 +13,6 @@ class User(BaseModel):
     __tablename__ = 'users'
 
     id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
-    username:Mapped[String] = mapped_column(String,nullable=False)
+    username:Mapped[String] = mapped_column(String,unique=True,index=True,nullable=False)
     email:Mapped[String] = mapped_column(String,unique=True,index=True,nullable=False)
     hashed_password:Mapped[String] = mapped_column(String,nullable=False)
