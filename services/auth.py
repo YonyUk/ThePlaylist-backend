@@ -61,7 +61,7 @@ class AuthService:
     
     async def get_current_user(
         self,
-        token:str=Depends(_oauth2_schema),
+        token:str
     ) -> UserSchema:
         '''
         Docstring for get_current_user
