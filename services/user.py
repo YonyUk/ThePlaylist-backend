@@ -27,22 +27,6 @@ class UserService(Service[
         del fields['password']
         return super()._get_instance(**fields)
     
-    async def authenticate_user(self,username:str,password:str) -> bool:
-        '''
-        Docstring for authenticate_user
-        
-        :type username: str
-        :type password: str
-        :rtype: UserSchema | None
-        '''
-
-        user = await self._repository.get_by_name(username)
-        if not user:
-            return False
-        if not self._crypt_context.verify(username,str(user.hashed_password)):
-            return False
-        return True
-    
     async def get_by_name(self,username:str) -> UserSchema | None:
         '''
         Docstring for get_by_name
