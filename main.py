@@ -1,4 +1,5 @@
 from fastapi import FastAPI,status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 import os
@@ -13,6 +14,14 @@ app = FastAPI(
     title='ThePLaylist API',
     description='API for ThePlaylist social network',
     version=ENVIRONMENT.API_VERSION
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ENVIRONMENT.ALLOWED_ORIGINS,
+    allow_credentials=ENVIRONMENT.ALLOWED_CREDENTIALS,
+    allow_methods=ENVIRONMENT.ALLOWED_METHODS,
+    allow_headers=ENVIRONMENT.ALLOWED_HEADERS
 )
 
 app.include_router(UserRouter,prefix=ENVIRONMENT.GLOBAL_API_PREFIX)

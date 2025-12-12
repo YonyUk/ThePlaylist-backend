@@ -33,9 +33,10 @@ class Settings:
         self._max_user_password_length:int = int(os.getenv('MAX_USER_PASSWORD_LENGTH','maximun length for password'))
         self._page_size:int = int(os.getenv('PAGE_SIZE','size of pages in pagination'))
         self._allowed_origins:List[str] = json.loads(os.getenv('ALLOWED_ORIGINS','origins allowed to make requests to this api'))
-        self._allow_credentials:bool = bool(os.getenv('ALLOW_CREDENTIALS','allow credentials sending'))
+        self._allowed_credentials:bool = bool(os.getenv('ALLOWED_CREDENTIALS','allow credentials sending'))
         self._allowed_methods:List[str] = json.loads(os.getenv('ALLOWED_METHODS','methods allowed from others origins'))
-
+        self._allowed_headers:List[str] = json.loads(os.getenv('ALLOWED_HEADERS','allowed_headers'))
+    
     @classmethod
     def get_instance(cls):
         if not cls._instance:
@@ -47,9 +48,12 @@ class Settings:
         return self._allowed_origins
     
     @property
-    def ALLOW_CREDENTIALS(self) -> bool:
-        return self._allow_credentials
+    def ALLOWED_CREDENTIALS(self) -> bool:
+        return self._allowed_credentials
     
+    @property
+    def ALLOWED_HEADERS(self) -> List[str]:
+        return self._allowed_headers
     @property
     def ALLOWED_METHODS(self) -> List[str]:
         return self._allowed_methods
