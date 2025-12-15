@@ -31,7 +31,7 @@ class AuthService:
         user = await self._user_repository.get_by_name(username)
         if not user:
             return False
-        if not self._crypt_context.verify(username,str(user.hashed_password)):
+        if not self._crypt_context.verify(password,str(user.hashed_password)):
             return False
         return True
     
