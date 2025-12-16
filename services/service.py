@@ -128,7 +128,16 @@ class Service(Generic[
         db_instance = await self._repository.get_by_id(id)
         if not db_instance:
             return None
-        return await self._repository.update(id,update_data)
+        update_instance = self._get_instance(**{
+            **update_data.model_dump(
+                exclude=self._exclude_fields,
+                exclude_unset=self._exclude_unset
+            ),
+            **{
+                'id':id
+            }
+        })
+        return await self._repository.update(id,update_instance)
     
     async def delete(self,id:str) -> bool:
         '''

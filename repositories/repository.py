@@ -43,7 +43,7 @@ class Repository(Generic[ModelType],ABC):
         '''
         return {
             key:getattr(instance,key)
-            for key in instance.__mapper__.columns().keys()
+            for key in instance.__mapper__.columns.keys()
             if hasattr(instance,key)
         }
     
@@ -106,7 +106,7 @@ class Repository(Generic[ModelType],ABC):
         db_instance = await self.get_by_id(instance_id)
         if not db_instance:
             return None
-        update_data = self._instance_to_dict(db_instance)
+        update_data = self._instance_to_dict(update_instance)
         await self._db.execute(
             update(self._model).where(self._model.id==instance_id).values(**update_data)
         )
