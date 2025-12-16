@@ -6,7 +6,7 @@ class AccessTokenSchema(BaseModel):
 
     schema for an access token
     '''
-    access_token:str
+    message:str
     token_type:str
 
 class AccessTokenDataSchema(BaseModel):

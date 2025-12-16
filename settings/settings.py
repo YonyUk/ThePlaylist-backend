@@ -36,12 +36,17 @@ class Settings:
         self._allowed_credentials:bool = bool(os.getenv('ALLOWED_CREDENTIALS','allow credentials sending'))
         self._allowed_methods:List[str] = json.loads(os.getenv('ALLOWED_METHODS','methods allowed from others origins'))
         self._allowed_headers:List[str] = json.loads(os.getenv('ALLOWED_HEADERS','allowed_headers'))
+        self._production:bool = bool(os.getenv('PRODUCTION','tells if this is a production environnment'))
     
     @classmethod
     def get_instance(cls):
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def PRODUCTION(self) -> bool:
+        return self._production
 
     @property
     def ALLOWED_ORIGINS(self) -> List[str]:

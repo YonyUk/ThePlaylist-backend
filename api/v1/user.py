@@ -1,6 +1,6 @@
 from typing import Sequence
 from datetime import timedelta
-from fastapi import APIRouter,HTTPException,status,Depends,Query
+from fastapi import APIRouter,HTTPException, Response,status,Depends,Query
 from fastapi.security import OAuth2PasswordRequestForm
 from schemas import UserSchema,UserCreateSchema,UserUpdateSchema,AccessTokenSchema
 from services import AuthService,UserService,get_auth_service,get_user_service,get_current_user
@@ -43,9 +43,10 @@ async def register(
     response_model=AccessTokenSchema
 )
 async def login_for_access_token(
+    response:Response,
     form_data:OAuth2PasswordRequestForm=Depends(),
     auth_service:AuthService=Depends(get_auth_service),
-    user_service:UserService=Depends(get_user_service)
+    user_service:UserService=Depends(get_user_service),
 ):
     authenticated = await auth_service.authenticate_user(form_data.username,form_data.password)
     if not authenticated:
@@ -60,7 +61,17 @@ async def login_for_access_token(
         data={'sub':user.username},
         expires_delta=access_token_expires
     )
-    return {'access_token':access_token,'token_type':'bearer'}
+
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        max_age=int(access_token_expires.total_seconds()),
+        samesite='strict',
+        secure=ENVIRONMENT.PRODUCTION,
+        path='/'
+    )
+    return {'message':'login successfully','token_type':'bearer'}
 
 @router.get(
     '',
