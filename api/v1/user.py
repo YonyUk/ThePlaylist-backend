@@ -83,6 +83,19 @@ async def get_current_user_data(
 ):
     return current_user
 
+@router.post(
+    '/logout',
+    status_code=status.HTTP_200_OK
+)
+async def logout(
+    response:Response
+):
+    response.delete_cookie(
+        key='access_token',
+        path='/'
+    )
+    return {'message':'Logged out successfully'}
+
 @router.get(
     '/verify',
     status_code=status.HTTP_200_OK,
