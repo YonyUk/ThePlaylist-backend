@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from .user import UserSchema
 
 class AccessTokenSchema(BaseModel):
     '''
@@ -16,3 +17,12 @@ class AccessTokenDataSchema(BaseModel):
     schema for the data of an access token
     '''
     username:str
+
+class VerificationSchema(BaseModel):
+    '''
+    Docstring for VerificationSchema
+
+    schema for Verification endpoint
+    '''
+    authenticated:bool
+    user:UserSchema

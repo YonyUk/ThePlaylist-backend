@@ -2,7 +2,7 @@ from typing import Sequence
 from datetime import timedelta
 from fastapi import APIRouter,HTTPException, Response,status,Depends,Query
 from fastapi.security import OAuth2PasswordRequestForm
-from schemas import UserSchema,UserCreateSchema,UserUpdateSchema,AccessTokenSchema
+from schemas import UserSchema,UserCreateSchema,UserUpdateSchema,AccessTokenSchema,VerificationSchema
 from services import AuthService,UserService,get_auth_service,get_user_service,get_current_user
 from settings import ENVIRONMENT
 
@@ -72,6 +72,26 @@ async def login_for_access_token(
         path='/'
     )
     return {'message':'login successfully','token_type':'bearer'}
+
+@router.get(
+    '/me',
+    response_model=UserSchema,
+    status_code=status.HTTP_200_OK
+)
+async def get_current_user_data(
+    current_user:UserSchema=Depends(get_current_user)
+):
+    return current_user
+
+@router.get(
+    '/verify',
+    status_code=status.HTTP_200_OK,
+    response_model=VerificationSchema
+)
+async def verify_user_authenticated(
+    current_user:UserSchema=Depends(get_current_user)
+):
+    return VerificationSchema(authenticated=True,user=current_user)
 
 @router.get(
     '',
