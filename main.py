@@ -18,7 +18,6 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ENVIRONMENT.ALLOWED_ORIGINS,

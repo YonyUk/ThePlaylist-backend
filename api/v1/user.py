@@ -67,7 +67,7 @@ async def login_for_access_token(
         value=access_token,
         httponly=True,
         max_age=int(access_token_expires.total_seconds()),
-        samesite='strict',
+        samesite=ENVIRONMENT.SAME_SITE_HEADER,
         secure=ENVIRONMENT.PRODUCTION,
         path='/'
     )

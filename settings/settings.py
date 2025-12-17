@@ -2,7 +2,7 @@ import dotenv
 import os
 import json
 from passlib.context import CryptContext
-from typing import List
+from typing import List, Literal
 
 dotenv.load_dotenv()
 
@@ -33,16 +33,31 @@ class Settings:
         self._max_user_password_length:int = int(os.getenv('MAX_USER_PASSWORD_LENGTH','maximun length for password'))
         self._page_size:int = int(os.getenv('PAGE_SIZE','size of pages in pagination'))
         self._allowed_origins:List[str] = json.loads(os.getenv('ALLOWED_ORIGINS','origins allowed to make requests to this api'))
-        self._allowed_credentials:bool = bool(os.getenv('ALLOWED_CREDENTIALS','allow credentials sending'))
+        self._allowed_credentials:bool = self._get_boolean(os.getenv('ALLOWED_CREDENTIALS','allow credentials sending'))
         self._allowed_methods:List[str] = json.loads(os.getenv('ALLOWED_METHODS','methods allowed from others origins'))
         self._allowed_headers:List[str] = json.loads(os.getenv('ALLOWED_HEADERS','allowed_headers'))
-        self._production:bool = bool(os.getenv('PRODUCTION','tells if this is a production environnment'))
-    
+        self._production:bool = self._get_boolean(os.getenv('PRODUCTION','tells if this is a production environnment'))
+        self._same_site_header:Literal['lax','strict','none'] = os.getenv('SAME_SITE_HEADER','same site header for cookies') # type: ignore
+        self._domain:str = os.getenv('DOMAIN','current domain')
+
+    def _get_boolean(self,value:str) -> bool:
+        if not value in ['false','true']:
+            raise ValueError('PRODUCTION key must be "true" or "false"')
+        return value == 'true'
+
     @classmethod
     def get_instance(cls):
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def DOMAIN(self) -> str:
+        return self._domain
+
+    @property
+    def SAME_SITE_HEADER(self) -> Literal['lax','strict','none']:
+        return self._same_site_header
     
     @property
     def PRODUCTION(self) -> bool:
