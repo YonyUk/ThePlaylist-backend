@@ -1,3 +1,4 @@
+from fastapi import HTTPException,status
 from repositories import UserRepository
 from models import User
 from schemas import UserCreateSchema,UserUpdateSchema,UserSchema
@@ -21,11 +22,21 @@ class UserService(Service[
         super().__init__(User, repository, exclude_fields, exclude_unset)
         self._crypt_context = ENVIRONMENT.CRYPT_CONTEXT
     
-    def _get_instance(self, **fields) -> User:
-        password = fields['password']
-        fields['hashed_password'] = self._crypt_context.hash(password)
+    async def _get_instance(self, **fields) -> User:
+        # breakpoint()
+        if fields['password']:
+            password = fields['password']
+            fields['hashed_password'] = self._crypt_context.hash(password)
+        else:
+            db_instance = await self._repository.get_by_id(fields['id'])
+            if not db_instance:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f'Could not found a user with id {fields['id']}'
+                )
+            fields['hashed_password'] = db_instance.hashed_password
         del fields['password']
-        return super()._get_instance(**fields)
+        return await super()._get_instance(**fields)
     
     async def get_by_name(self,username:str) -> UserSchema | None:
         '''

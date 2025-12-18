@@ -53,7 +53,7 @@ class Service(Generic[
         '''
         return model
     
-    def _get_instance(self,**fields) -> ModelType:
+    async def _get_instance(self,**fields) -> ModelType:
         '''
         Docstring for _get_instance
         
@@ -100,7 +100,7 @@ class Service(Generic[
         :rtype: SchemaType | None
         '''
 
-        db_instance = self._get_instance(
+        db_instance = await self._get_instance(
             **{
                 **value.model_dump(
                     exclude=self._exclude_fields,
@@ -128,7 +128,7 @@ class Service(Generic[
         db_instance = await self._repository.get_by_id(id)
         if not db_instance:
             return None
-        update_instance = self._get_instance(**{
+        update_instance = await self._get_instance(**{
             **update_data.model_dump(
                 exclude=self._exclude_fields,
                 exclude_unset=self._exclude_unset

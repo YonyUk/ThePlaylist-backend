@@ -1,5 +1,5 @@
 from pydantic import BaseModel,EmailStr
-from typing import Annotated
+from typing import Annotated,Optional
 from pydantic.types import StringConstraints
 from settings import ENVIRONMENT
 
@@ -32,12 +32,19 @@ class UserCreateSchema(UserBaseSchema):
         )
     ]
 
-class UserUpdateSchema(UserCreateSchema):
+class UserUpdateSchema(UserBaseSchema):
     '''
     Docstring for UserUpdateSchema
 
     schema for 'User' entity updates
     '''
+    password:Optional[Annotated[
+        str,
+        StringConstraints(
+            min_length=ENVIRONMENT.MIN_USER_PASSWORD_LENGTH,
+            max_length=ENVIRONMENT.MAX_USER_PASSWORD_LENGTH
+        )
+    ]]
 
 class UserSchema(UserBaseSchema):
     '''
