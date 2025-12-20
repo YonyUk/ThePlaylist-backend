@@ -1,7 +1,8 @@
 from fastapi import Depends, HTTPException, Request,status
-from repositories import get_user_repository,UserRepository
+from repositories import get_user_repository,get_playlist_repository,UserRepository,PlaylistRepository
 from .user import UserService
 from .auth import AuthService,_oauth2_schema
+from .playlist import PlaylistService
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
 
 _http_security = HTTPBearer(auto_error=False)
@@ -39,3 +40,10 @@ async def get_current_user(
             headers={'WWW-Authenticate':'Bearer'}
         )
     return await service.get_current_user(token)
+
+def get_playlist_service(repository:PlaylistRepository=Depends(get_playlist_repository)):
+    service = PlaylistService(repository)
+    try:
+        yield service
+    finally:
+        service = None
