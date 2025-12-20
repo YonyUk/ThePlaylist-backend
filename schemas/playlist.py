@@ -16,14 +16,12 @@ class PlaylistBaseSchema(BaseModel):
             max_length=ENVIRONMENT.MAX_PLAYLIST_NAME_LENGTH
         )
     ]
-    description:Optional[
-        Annotated[
-            str,
-            StringConstraints(
-                max_length=ENVIRONMENT.MAX_PLAYLIST_DESCRIPTION_LENGTH
-            )
-        ]
-    ]
+    description:Annotated[
+        str,
+        StringConstraints(
+            max_length=ENVIRONMENT.MAX_PLAYLIST_DESCRIPTION_LENGTH
+        )
+    ] | None
 
 class PlaylistCreateSchema(PlaylistBaseSchema):
     '''

@@ -14,3 +14,19 @@ class PlaylistService(Service[
     
     def __init__(self,repository: PlaylistRepository, exclude_fields:set=set(), exclude_unset: bool = True):
         super().__init__(Playlist, repository, exclude_fields, exclude_unset)
+    
+    async def update(self, id: str, update_data: PlaylistUpdateSchema) -> PlaylistSchema | None:
+        db_instance = await self.get_by_id(id)
+        if not db_instance:
+            return None
+        update_instance = await self._get_instance(**{
+            **update_data.model_dump(
+                exclude_unset=self._exclude_unset,
+                exclude=self._exclude_fields
+            ),
+            **{
+                'author_id':db_instance.author_id,
+                'id':id
+            }
+        })
+        return await self._repository.update(id,update_instance)

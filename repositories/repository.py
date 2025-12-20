@@ -130,5 +130,4 @@ class Repository(Generic[ModelType],ABC):
             return False
         await self._db.delete(db_instance)
         await self._db.commit()
-        await self._db.refresh(db_instance)
         return True

@@ -17,7 +17,7 @@ class Playlist(BaseModel):
     likes:Mapped[int] = mapped_column(BigInteger,default=0)
     dislikes:Mapped[int] = mapped_column(BigInteger,default=0)
     plays:Mapped[int] = mapped_column(BigInteger,default=0)
-    description:Mapped[str] = mapped_column(String)
+    description:Mapped[str] = mapped_column(String,nullable=True)
     loves:Mapped[int] = mapped_column(BigInteger,default=0)
 
     author_id:Mapped[str] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)

@@ -6,6 +6,7 @@ from fastapi.openapi.utils import get_openapi
 import logging
 
 from api.v1.user import router as UserRouter
+from api.v1.playlist import router as PlaylistRouter
 from settings import ENVIRONMENT
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +28,7 @@ app.add_middleware(
 )
 
 app.include_router(UserRouter,prefix=ENVIRONMENT.GLOBAL_API_PREFIX)
+app.include_router(PlaylistRouter,prefix=ENVIRONMENT.GLOBAL_API_PREFIX)
 
 @app.exception_handler(404)
 async def not_found(request,exc):
