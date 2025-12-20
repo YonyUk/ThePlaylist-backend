@@ -39,6 +39,9 @@ class Settings:
         self._production:bool = self._get_boolean(os.getenv('PRODUCTION','tells if this is a production environnment'))
         self._same_site_header:Literal['lax','strict','none'] = os.getenv('SAME_SITE_HEADER','same site header for cookies') # type: ignore
         self._domain:str = os.getenv('DOMAIN','current domain')
+        self._min_playlist_name_length:int = int(os.getenv('MIN_PLAYLIST_NAME_LENGTH','min length for a playlist name'))
+        self._max_playlist_name_length:int = int(os.getenv('MAX_PLAYLIST_NAME_LENGTH','max length for a playlist name'))
+        self._max_playlist_description_length:int = int(os.getenv('MAX_PLAYLIST_DESCRIPTION_LENGTH','max length for a description of one playlist'))
 
     def _get_boolean(self,value:str) -> bool:
         if not value in ['false','true']:
@@ -50,6 +53,18 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def MIN_PLAYLIST_NAME_LENGTH(self) -> int:
+        return self._min_playlist_name_length
+    
+    @property
+    def MAX_PLAYLIST_NAME_LENGTH(self) -> int:
+        return self._max_playlist_name_length
+    
+    @property
+    def MAX_PLAYLIST_DESCRIPTION_LENGTH(self) -> int:
+        return self._max_playlist_description_length
     
     @property
     def DOMAIN(self) -> str:
