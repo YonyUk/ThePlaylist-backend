@@ -18,7 +18,7 @@ class BackBlazeB2Service:
         except Exception as ex:
             raise RuntimeError(f'Configuration error: {ex}')
     
-    def upload_file(self,file_data:bytes,file_name:str,content_type:str | None = None) -> dict:
+    async def upload_file(self,file_data:bytes,file_name:str,content_type:str | None = None) -> dict:
         if not content_type:
             content_type,_ = mimetypes.guess_type(file_name)
             if not content_type:
