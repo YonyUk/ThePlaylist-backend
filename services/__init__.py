@@ -1,8 +1,17 @@
 from fastapi import Depends, HTTPException, Request,status
-from repositories import get_user_repository,get_playlist_repository,UserRepository,PlaylistRepository
+from repositories import (
+    get_user_repository,
+    get_playlist_repository,
+    get_track_repository,
+    UserRepository,
+    PlaylistRepository,
+    TrackRepository
+)
 from .user import UserService
 from .auth import AuthService,_oauth2_schema
 from .playlist import PlaylistService
+from .external.upload_download import BackBlazeB2Service
+from .track import TrackService
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
 
 _http_security = HTTPBearer(auto_error=False)
@@ -43,6 +52,20 @@ async def get_current_user(
 
 def get_playlist_service(repository:PlaylistRepository=Depends(get_playlist_repository)):
     service = PlaylistService(repository)
+    try:
+        yield service
+    finally:
+        service = None
+
+def get_track_service(repository:TrackRepository=Depends(get_track_repository)):
+    service = TrackService(repository)
+    try:
+        yield service
+    finally:
+        service = None
+
+def get_backblazeb2_service():
+    service = BackBlazeB2Service()
     try:
         yield service
     finally:
