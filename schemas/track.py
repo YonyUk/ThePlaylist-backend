@@ -1,3 +1,4 @@
+from typing import List
 from pydantic import BaseModel
 
 class TrackBaseSchema(BaseModel):
@@ -31,15 +32,20 @@ class TrackSchema(TrackBaseSchema):
     '''
     id:str
     size:float
+    playlists:List[str]
 
     class Config:
         from_attributes = True
 
-class TrackDownloadSchema(TrackSchema):
+class TrackDownloadSchema(TrackBaseSchema):
     '''
     Docstring for TrackDownloadSchema
     
     schema to download 'Track'
     '''
-
+    id:str
+    size:float
     url:str
+
+    class Config:
+        from_attributes = True

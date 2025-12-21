@@ -12,13 +12,19 @@ class Playlist(BaseModel):
 
     __tablename__ = 'playlists'
     
-    id:Mapped[str] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
-    name:Mapped[str] = mapped_column(String,nullable=False)
-    likes:Mapped[int] = mapped_column(BigInteger,default=0)
-    dislikes:Mapped[int] = mapped_column(BigInteger,default=0)
-    plays:Mapped[int] = mapped_column(BigInteger,default=0)
-    description:Mapped[str] = mapped_column(String,nullable=True)
-    loves:Mapped[int] = mapped_column(BigInteger,default=0)
+    id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
+    name:Mapped[String] = mapped_column(String,nullable=False)
+    likes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    dislikes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    plays:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    description:Mapped[String] = mapped_column(String,nullable=True)
+    loves:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
 
-    author_id:Mapped[str] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
+    author_id:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
     author = relationship('User',back_populates='playlists',lazy='selectin')
+
+    tracks = relationship(
+        'Track',
+        back_populates='playlists',
+        lazy='selectin',
+    )
