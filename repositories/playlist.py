@@ -8,4 +8,4 @@ class PlaylistRepository(Repository[Playlist]):
         super().__init__(Playlist, db)
     
     async def _try_get_instance(self, instance: Playlist) -> Playlist | None:
-        return await self.get_by_id(instance.id)
+        return await self.get_by_id(str(instance.id))
