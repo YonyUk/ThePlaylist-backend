@@ -17,31 +17,104 @@ class Settings:
         self._db_port:int = int(os.getenv('DB_PORT','listener port for the database'))
         self._db_password:str = os.getenv('DB_PASSWORD','database password')
         self._db_name:str = os.getenv('DB_NAME','database name')
-        self._global_api_prefix:str = os.getenv('API_GLOBAL_PREFIX','global api prefix for endpoints')
+        self._global_api_prefix:str = os.getenv(
+            'API_GLOBAL_PREFIX',
+            'global api prefix for endpoints'
+        )
         self._api_version:str = os.getenv('VERSION','api version')
         self._secret_key:str = os.getenv('SECRET_KEY','your secret key')
         self._algorithm:str = os.getenv('ALGORITHM','algorithm to use')
-        self._token_life_time:int = int(os.getenv('ACCESS_TOKEN_EXPIRES_MINUTES','access token life time'))
-        self._alembic_config_file_path:str = os.getenv('ALEMBIC_CONFIG_FILE','alembic config file path')
+        self._token_life_time:int = int(os.getenv(
+            'ACCESS_TOKEN_EXPIRES_MINUTES',
+            'access token life time'
+        ))
+        self._alembic_config_file_path:str = os.getenv(
+            'ALEMBIC_CONFIG_FILE',
+            'alembic config file path'
+        )
         self._crypt_context:CryptContext = CryptContext(schemes=['bcrypt'],deprecated='auto')
-        self._sqlalchemy_pool_size:int = int(os.getenv('SQLALCHEMY_POOL_SIZE','pool size for sqlalchemy'))
-        self._sqlalchemy_max_overflow:int = int(os.getenv('SQLALCHEMY_MAX_OVERFLOW','max overflow allowed for sqlalchemy'))
-        self._sqlalchemy_pool_timeout:int = int(os.getenv('SQLALCHEMY_POOL_TIMEOUT','pool timeout for sqlalchemy'))
-        self._min_username_length:int = int(os.getenv('MIN_USERNAME_LENGTH','minimun length for username'))
-        self._min_user_password_length:int = int(os.getenv('MIN_USER_PASSWORD_LENGTH','minimun length for password'))
-        self._max_username_length:int = int(os.getenv('MAX_USERNAME_LENGTH','maximun length for username'))
-        self._max_user_password_length:int = int(os.getenv('MAX_USER_PASSWORD_LENGTH','maximun length for password'))
+        self._sqlalchemy_pool_size:int = int(os.getenv(
+            'SQLALCHEMY_POOL_SIZE',
+            'pool size for sqlalchemy'
+        ))
+        self._sqlalchemy_max_overflow:int = int(os.getenv(
+            'SQLALCHEMY_MAX_OVERFLOW',
+            'max overflow allowed for sqlalchemy'
+        ))
+        self._sqlalchemy_pool_timeout:int = int(os.getenv(
+            'SQLALCHEMY_POOL_TIMEOUT',
+            'pool timeout for sqlalchemy'
+        ))
+        self._min_username_length:int = int(os.getenv(
+            'MIN_USERNAME_LENGTH',
+            'minimun length for username'
+        ))
+        self._min_user_password_length:int = int(os.getenv(
+            'MIN_USER_PASSWORD_LENGTH',
+            'minimun length for password'
+        ))
+        self._max_username_length:int = int(os.getenv(
+            'MAX_USERNAME_LENGTH',
+            'maximun length for username'
+        ))
+        self._max_user_password_length:int = int(os.getenv(
+            'MAX_USER_PASSWORD_LENGTH',
+            'maximun length for password'
+        ))
         self._page_size:int = int(os.getenv('PAGE_SIZE','size of pages in pagination'))
-        self._allowed_origins:List[str] = json.loads(os.getenv('ALLOWED_ORIGINS','origins allowed to make requests to this api'))
-        self._allowed_credentials:bool = self._get_boolean(os.getenv('ALLOWED_CREDENTIALS','allow credentials sending'))
-        self._allowed_methods:List[str] = json.loads(os.getenv('ALLOWED_METHODS','methods allowed from others origins'))
-        self._allowed_headers:List[str] = json.loads(os.getenv('ALLOWED_HEADERS','allowed_headers'))
-        self._production:bool = self._get_boolean(os.getenv('PRODUCTION','tells if this is a production environnment'))
-        self._same_site_header:Literal['lax','strict','none'] = os.getenv('SAME_SITE_HEADER','same site header for cookies') # type: ignore
+        self._allowed_origins:List[str] = json.loads(os.getenv(
+            'ALLOWED_ORIGINS',
+            'origins allowed to make requests to this api'
+        ))
+        self._allowed_credentials:bool = self._get_boolean(os.getenv(
+            'ALLOWED_CREDENTIALS',
+            'allow credentials sending'
+        ))
+        self._allowed_methods:List[str] = json.loads(os.getenv(
+            'ALLOWED_METHODS',
+            'methods allowed from others origins'
+        ))
+        self._allowed_headers:List[str] = json.loads(os.getenv(
+            'ALLOWED_HEADERS',
+            'allowed_headers'
+        ))
+        self._production:bool = self._get_boolean(os.getenv(
+            'PRODUCTION',
+            'tells if this is a production environnment'
+        ))
+        self._same_site_header:Literal['lax','strict','none'] = os.getenv(
+            'SAME_SITE_HEADER',
+            'same site header for cookies'
+        ) # type: ignore
         self._domain:str = os.getenv('DOMAIN','current domain')
-        self._min_playlist_name_length:int = int(os.getenv('MIN_PLAYLIST_NAME_LENGTH','min length for a playlist name'))
-        self._max_playlist_name_length:int = int(os.getenv('MAX_PLAYLIST_NAME_LENGTH','max length for a playlist name'))
-        self._max_playlist_description_length:int = int(os.getenv('MAX_PLAYLIST_DESCRIPTION_LENGTH','max length for a description of one playlist'))
+        self._min_playlist_name_length:int = int(os.getenv(
+            'MIN_PLAYLIST_NAME_LENGTH',
+            'min length for a playlist name'
+        ))
+        self._max_playlist_name_length:int = int(os.getenv(
+            'MAX_PLAYLIST_NAME_LENGTH',
+            'max length for a playlist name'
+        ))
+        self._max_playlist_description_length:int = int(os.getenv(
+            'MAX_PLAYLIST_DESCRIPTION_LENGTH',
+            'max length for a description of one playlist'
+        ))
+        self._backblazeb2_bucket_name:str = os.getenv(
+            'BACKBLAZEB2_BUCKET_NAME',
+            'name of the bucket in backblazeb2 service'
+        )
+        self._backblazeb2_aws_access_key_id:str = os.getenv(
+            'BACKBLAZEB2_AWS_ACCESS_KEY_ID',
+            'key id of the application key for the backblazeb2 service'
+        )
+        self._backblazeb2_aws_secret_access_key:str = os.getenv(
+            'BACKBLAZEB2_AWS_SECRET_ACCESS_KEY',
+            'secret key for access to backblazeb2 service'
+        )
+        self._backblazeb2_bucket_id:str = os.getenv(
+            'BACKBLAZEB2_BUCKET_ID',
+            'id of the bucket for the app in backblazeb2 service'
+        )
 
     def _get_boolean(self,value:str) -> bool:
         if not value in ['false','true']:
@@ -53,6 +126,22 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def BACKBLAZEB2_BUCKET_ID(self) -> str:
+        return self._backblazeb2_bucket_id
+    
+    @property
+    def BACKBLAZEB2_BUCKET_NAME(self) -> str:
+        return self._backblazeb2_bucket_name
+    
+    @property
+    def BACKBLAZEB2_AWS_ACCESS_KEY_ID(self) -> str:
+        return self._backblazeb2_aws_access_key_id
+    
+    @property
+    def BACKBLAZEB2_AWS_SECRET_ACCESS_KEY(self) -> str:
+        return self._backblazeb2_aws_secret_access_key
     
     @property
     def MIN_PLAYLIST_NAME_LENGTH(self) -> int:
