@@ -113,3 +113,23 @@ class BackBlazeB2Service:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'An unexpected error has ocurred: {e}'
             )
+    
+    async def remove_file(self,file_id:str,file_name:str) -> bool:
+        try:
+            self._api.delete_file_version(file_id,file_name,True)
+            return True
+        except B2RequestTimeout as e:
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail='The deleting process took too long to complete'
+            )
+        except B2ConnectionError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Connection failed: {e}'
+            )
+        except B2Error as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'An unexpected error has ocurred: {e}'
+            )

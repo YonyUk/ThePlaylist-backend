@@ -77,3 +77,20 @@ async def get_track_url(
             detail=f'No track with id "{track_id}" was found'
         )
     return db_track
+
+@router.delete(
+    '/{track_id}',
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def delete(
+    track_id:str,
+    service:TrackService=Depends(get_track_service),
+    current_user:UserSchema=Depends(get_current_user)
+):
+    deleted = await service.delete(track_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while deleting'
+        )
+    return {'message':'data deleted successfully'}
