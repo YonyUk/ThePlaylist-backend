@@ -9,7 +9,7 @@ router = APIRouter(prefix='/tracks',tags=['tracks'])
 @router.get(
     '',
     status_code=status.HTTP_200_OK,
-    response_model=TrackSchema
+    response_model=Sequence[TrackSchema]
 )
 async def get_playlists(
     page:int=Query(0,description='page of results',ge=0),

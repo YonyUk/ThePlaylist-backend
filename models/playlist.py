@@ -27,4 +27,5 @@ class Playlist(BaseModel):
         'Track',
         back_populates='playlists',
         lazy='selectin',
+        secondary='playlists_tracks'
     )
