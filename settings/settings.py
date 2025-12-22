@@ -115,6 +115,10 @@ class Settings:
             'BACKBLAZEB2_BUCKET_ID',
             'id of the bucket for the app in backblazeb2 service'
         )
+        self._backblazeb2_url_lifetime:int = int(os.getenv(
+            'BACKBLAZEB2_URL_LIFETIME',
+            'lifetime of an authorization token for an url public'
+        ))
 
     def _get_boolean(self,value:str) -> bool:
         if not value in ['false','true']:
@@ -126,6 +130,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def BACKBLAZEB2_URL_LIFETIME(self) -> int:
+        return self._backblazeb2_url_lifetime
     
     @property
     def BACKBLAZEB2_BUCKET_ID(self) -> str:

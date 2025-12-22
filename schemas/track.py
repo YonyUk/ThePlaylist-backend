@@ -31,7 +31,7 @@ class TrackSchema(TrackBaseSchema):
     schema for 'Track' entity
     '''
     id:str
-    size:float
+    size:int
     playlists:List[str]
 
     class Config:
@@ -44,7 +44,7 @@ class TrackDownloadSchema(TrackBaseSchema):
     schema to download 'Track'
     '''
     id:str
-    size:float
+    size:int
     url:str
 
     class Config:
