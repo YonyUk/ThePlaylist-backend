@@ -1,7 +1,7 @@
 from fastapi import HTTPException,status
 from repositories import TrackRepository
 from models import Track
-from schemas import TrackUploadSchema,TrakUpdateSchema,TrackSchema
+from schemas import TrackUploadSchema,TrakUpdateSchema,TrackSchema,TrackDownloadSchema
 from .service import Service
 from .external.upload_download import BackBlazeB2Service
 
@@ -53,3 +53,15 @@ class TrackService(Service[
             id=b2_response.id,
             size=b2_response.size
         )
+    
+    async def get_track_url(self,track_id:str) -> TrackDownloadSchema | None:
+        '''
+        Docstring for get_track_url
+        
+        :type track_id: str
+        :rtype: TrackDownloadSchema | None
+        '''
+        db_track = await self.get_by_id(track_id)
+        if not db_track:
+            return None
+        return await self._bacblazeb2_service.get_file_by_id(db_track)
