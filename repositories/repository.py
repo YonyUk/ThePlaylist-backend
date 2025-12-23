@@ -98,11 +98,14 @@ class Repository(Generic[ModelType],ABC):
             return instance
         except IntegrityError as e:
             logger.error(f'Integrity error while creating {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return None
         except SQLAlchemyError as e:
             logger.error(f'Database error creating {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return None
         except Exception as e:
             logger.error(f'An unexpected error has ocurred: {e}')
-        finally:
             await self._db.rollback()
             return None
     
@@ -130,11 +133,14 @@ class Repository(Generic[ModelType],ABC):
             return db_instance
         except IntegrityError as e:
             logger.error(f'Integrity error while updating {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return None
         except SQLAlchemyError as e:
             logger.error(f'Database error updating {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return None
         except Exception as e:
             logger.error(f'An unexpected error has ocurred: {e}')
-        finally:
             await self._db.rollback()
             return None
     
@@ -156,10 +162,13 @@ class Repository(Generic[ModelType],ABC):
             return True
         except IntegrityError as e:
             logger.error(f'Integrity error while deleting {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return False
         except SQLAlchemyError as e:
             logger.error(f'Database error deleting {self._model.__name__}: {e}')
+            await self._db.rollback()
+            return False
         except Exception as e:
             logger.error(f'An unexpected error has ocurred: {e}')
-        finally:
             await self._db.rollback()
             return False

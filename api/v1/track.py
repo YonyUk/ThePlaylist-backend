@@ -1,4 +1,5 @@
 import logging
+from hashlib import sha256
 from typing import Sequence
 from pathlib import Path
 from fastapi import APIRouter,HTTPException,status,Depends,Query,UploadFile,File
@@ -29,12 +30,19 @@ async def upload_track(
             detail=f'The file does not have a valid filename'
         )
     extension = Path(data.filename).suffix
-    track = TrackUploadSchema(name=f'{track_name}{extension}',author_name=author_name)
     
     # gets the file size
     data.file.seek(0,2)
     file_size = data.file.tell()
     data.file.seek(0)
+
+    hasher = sha256()
+    chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+    while chunk:
+        hasher.update(chunk)
+        chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+    
+    content_hash = hasher.hexdigest()
 
     if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
         raise HTTPException(
@@ -47,7 +55,7 @@ async def upload_track(
     try:
         if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
             track_data = await data.read()
-            cloud_response = await cloud_service.upload_file(track_data,track.name)
+            cloud_response = await cloud_service.upload_file(track_data,track_name)
         else:
             def stream_opener():
                 data.file.seek(0)
@@ -55,13 +63,19 @@ async def upload_track(
             
             cloud_response = await cloud_service.upload_file_streaming(
                 stream_opener=stream_opener, # type: ignore
-                file_name=track.name,
+                file_name=track_name,
                 file_size=file_size
             )
-            
+        
+        track = TrackUploadSchema(
+            name=f'{track_name}{extension}',
+            author_name=author_name,
+            file_id=cloud_response.id,
+            content_hash=content_hash
+            )
+        # breakpoint()
         db_track = await track_service.create(
             track,
-            id=cloud_response.id,
             size=cloud_response.size,
             uploaded_by=current_user.id
         )
@@ -69,7 +83,7 @@ async def upload_track(
             await cloud_service.remove_file(cloud_response.id,cloud_response.filename)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail='The track was not uploaded'
+                detail='The track already exists'
             )
         return db_track
     except HTTPException:

@@ -126,6 +126,10 @@ class Settings:
             'STREAMING_THRESHOLD',
             'marks when to use streaming to upload files'
         ))
+        self._chunk_size:int = int(os.getenv(
+            'CHUNK_SIZE',
+            'chunk size to read files'
+        ))
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -138,6 +142,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def CHUNK_SIZE(self) -> int:
+        return self._chunk_size * 1024 * 1024
     
     @property
     def STREAMING_THRESHOLD(self) -> int:

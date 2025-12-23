@@ -20,6 +20,8 @@ class Track(BaseModel):
     __tablename__ = 'tracks'
 
     id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
+    file_id:Mapped[String] = mapped_column(String,unique=True,index=True,nullable=False)
+    content_hash:Mapped[String] = mapped_column(String,unique=True,nullable=False,index=True)
     name:Mapped[String] = mapped_column(String,nullable=False)
     author_name:Mapped[String] = mapped_column(String,nullable=False)
     size:Mapped[Integer] = mapped_column(Integer,nullable=False)

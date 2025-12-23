@@ -16,13 +16,19 @@ class TrackUploadSchema(TrackBaseSchema):
     
     schema for 'Track' upload operation
     '''
+    file_id:str
+    content_hash:str
 
-class TrackUpdateSchema(TrackBaseSchema):
+class TrackUpdateSchema(TrackUploadSchema):
     '''
     Docstring for TrakUpdateSchema
     
     schema for 'Track' entity updates
     '''
+    likes:int
+    dislikes:int
+    loves:int
+    plays:int
 
 class TrackSchema(TrackBaseSchema):
     '''
@@ -36,8 +42,10 @@ class TrackSchema(TrackBaseSchema):
     dislikes:int
     loves:int
     plays:int
-    playlists:List[str]
     uploaded_by:str
+    file_id:str
+    content_hash:str
+    playlists:List[str]
 
     @field_validator('playlists',mode='before')
     @classmethod

@@ -10,4 +10,8 @@ class TrackRepository(Repository):
         super().__init__(Track, db)
     
     async def _try_get_instance(self, instance: Track) -> Track | None:
-        return await self.get_by_id(str(instance.id))
+        db_instance = await self.get_by_id(str(instance.id))
+        if not db_instance:
+            query = select(Track).where(Track.content_hash==instance.content_hash)
+            result = await self._db.execute(query)
+            return result.scalar_one_or_none()
