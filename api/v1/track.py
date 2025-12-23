@@ -1,9 +1,12 @@
+import logging
 from typing import Sequence
 from pathlib import Path
 from fastapi import APIRouter,HTTPException,status,Depends,Query,UploadFile,File
 from schemas import TrackDownloadSchema,TrackSchema,TrackUploadSchema,UserSchema
 from services import TrackService,get_track_service,get_current_user,BackBlazeB2Service,get_backblazeb2_service
 from settings import ENVIRONMENT
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix='/tracks',tags=['tracks'])
 
@@ -74,6 +77,7 @@ async def upload_track(
     except Exception as ex:
         if cloud_response:
             await cloud_service.remove_file(cloud_response.id,cloud_response.filename)
+        logger.error(ex)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='An unexpected error has ocurred'

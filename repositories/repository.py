@@ -1,8 +1,12 @@
+import logging
+from sqlalchemy.exc import IntegrityError,SQLAlchemyError
 from typing import Any, TypeVar,Generic,Sequence,Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,update
 from abc import ABC,abstractmethod
 from database import BaseModel
+
+logger = logging.getLogger(__name__)
 
 ModelType = TypeVar('ModelType',bound=BaseModel) # type: ignore
 
@@ -92,7 +96,13 @@ class Repository(Generic[ModelType],ABC):
             await self._db.commit()
             await self._db.refresh(instance)
             return instance
-        except Exception:
+        except IntegrityError as e:
+            logger.error(f'Integrity error while creating {self._model.__name__}: {e}')
+        except SQLAlchemyError as e:
+            logger.error(f'Database error creating {self._model.__name__}: {e}')
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred: {e}')
+        finally:
             await self._db.rollback()
             return None
     
@@ -118,7 +128,13 @@ class Repository(Generic[ModelType],ABC):
             await self._db.commit()
             await self._db.refresh(db_instance)
             return db_instance
-        except Exception:
+        except IntegrityError as e:
+            logger.error(f'Integrity error while updating {self._model.__name__}: {e}')
+        except SQLAlchemyError as e:
+            logger.error(f'Database error updating {self._model.__name__}: {e}')
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred: {e}')
+        finally:
             await self._db.rollback()
             return None
     
@@ -138,6 +154,12 @@ class Repository(Generic[ModelType],ABC):
             await self._db.delete(db_instance)
             await self._db.commit()
             return True
-        except Exception:
+        except IntegrityError as e:
+            logger.error(f'Integrity error while deleting {self._model.__name__}: {e}')
+        except SQLAlchemyError as e:
+            logger.error(f'Database error deleting {self._model.__name__}: {e}')
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred: {e}')
+        finally:
             await self._db.rollback()
             return False
