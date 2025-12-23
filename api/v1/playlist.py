@@ -78,7 +78,11 @@ async def update(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Only can modify your own playlists'
         )
-    db_playlist = await service.update(playlist_id,update_data)
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        author_id=current_user.id
+    )
     if not db_playlist:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -19,7 +19,7 @@ class TrackUploadSchema(TrackBaseSchema):
     file_id:str
     content_hash:str
 
-class TrackUpdateSchema(TrackUploadSchema):
+class TrackUpdateSchema(TrackBaseSchema):
     '''
     Docstring for TrakUpdateSchema
     

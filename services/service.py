@@ -118,7 +118,7 @@ class Service(Generic[
             return None
         return await self._to_schema(db_instance)
     
-    async def update(self,id:str,update_data:UpdateSchemaType) -> SchemaType | None:
+    async def update(self,id:str,update_data:UpdateSchemaType,**extra_fields) -> SchemaType | None:
         '''
         Docstring for update
         
@@ -137,6 +137,7 @@ class Service(Generic[
                 exclude=self._exclude_fields,
                 exclude_unset=self._exclude_unset
             ),
+            **extra_fields,
             **{
                 'id':id
             }
