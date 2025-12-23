@@ -1,6 +1,8 @@
 import mimetypes
 import datetime
-from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes
+from io import IOBase
+from typing import Callable
+from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream
 from b2sdk.v2.exception import B2ConnectionError,B2Error,B2RequestTimeout
 from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema
 from settings import ENVIRONMENT
@@ -27,7 +29,63 @@ class BackBlazeB2Service:
         except Exception as ex:
             raise RuntimeError(f'Configuration error: {ex}')
     
-    async def upload_file(self,file_data:bytes,file_name:str,content_type:str | None = None) -> TrackUploadedSchema:
+    async def upload_file_streaming(
+        self,
+        stream_opener: Callable[[],IOBase],
+        file_name:str,
+        file_size:int,
+        content_type:str | None = None,
+    ) -> TrackUploadedSchema:
+        if not content_type:
+            content_type,_ = mimetypes.guess_type(file_name)
+            if not content_type:
+                content_type = 'application/octet-stream'
+        
+        upload_source = UploadSourceStream(
+            stream_opener=stream_opener,
+            stream_length=file_size
+        )
+
+        try:
+            uploaded_file = self._bucket.upload(
+                upload_source=upload_source,
+                file_name=file_name,
+                content_type=content_type
+            )
+
+            return TrackUploadedSchema(
+                id=uploaded_file.id_,
+                filename=uploaded_file.file_name,
+                content_type=uploaded_file.content_type,
+                content_sha1=uploaded_file.content_sha1,
+                size=uploaded_file.size,
+                uploaded_at=datetime.datetime.fromtimestamp(
+                    uploaded_file.upload_timestamp / 1000,
+                    datetime.UTC
+                )
+            )
+        except B2RequestTimeout as e:
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail='The upload process took too long to complete'
+            )
+        except B2ConnectionError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Connection failed: {e}'
+            )
+        except B2Error as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'An unexpected error has ocurred: {e}'
+            )
+
+    async def upload_file(
+        self,
+        file_data:bytes,
+        file_name:str,
+        content_type:str | None = None
+    ) -> TrackUploadedSchema:
         '''
         Docstring for upload_file
         

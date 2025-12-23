@@ -118,7 +118,7 @@ async def get_users(
 ):
     return await service.get(
         limit,
-        page*ENVIRONMENT.PAGE_SIZE
+        page*limit
     )
 
 @router.get(

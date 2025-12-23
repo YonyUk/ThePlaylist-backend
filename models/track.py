@@ -6,8 +6,8 @@ from database import BaseModel
 playlists_tracks = Table(
     'playlists_tracks',
     BaseModel.metadata,
-    Column('playlist_id',String,ForeignKey('playlists.id',ondelete='CASCADE'),primary_key=True),
-    Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True)
+    Column('playlist_id',String,ForeignKey('playlists.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True,index=True)
 )
 
 class Track(BaseModel):
@@ -27,7 +27,7 @@ class Track(BaseModel):
     dislikes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
     plays:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
     loves:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
-    uploaded_by:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
+    uploaded_by:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False,index=True)
 
     playlists = relationship(
         'Playlist',

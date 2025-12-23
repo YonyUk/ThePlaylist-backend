@@ -20,7 +20,7 @@ class Playlist(BaseModel):
     description:Mapped[String] = mapped_column(String,nullable=True)
     loves:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
 
-    author_id:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
+    author_id:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False,index=True)
     author = relationship('User',back_populates='playlists',lazy='selectin')
 
     tracks = relationship(

@@ -27,21 +27,59 @@ async def upload_track(
         )
     extension = Path(data.filename).suffix
     track = TrackUploadSchema(name=f'{track_name}{extension}',author_name=author_name)
-    track_data = await data.read()
-    cloud_response = await cloud_service.upload_file(track_data,track.name)
-    db_track = await track_service.create(
-        track,
-        id=cloud_response.id,
-        size=cloud_response.size,
-        uploaded_by=current_user.id
-    )
-    if not db_track:
-        await cloud_service.remove_file(cloud_response.id,cloud_response.filename)
+    
+    # gets the file size
+    data.file.seek(0,2)
+    file_size = data.file.tell()
+    data.file.seek(0)
+
+    if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'File too large. Maximum size allowed is {ENVIRONMENT.MAX_TRACK_SIZE // 1024*1024 }MB'
+        )
+
+    cloud_response = None
+    
+    try:
+        if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
+            track_data = await data.read()
+            cloud_response = await cloud_service.upload_file(track_data,track.name)
+        else:
+            def stream_opener():
+                data.file.seek(0)
+                return data.file
+            
+            cloud_response = await cloud_service.upload_file_streaming(
+                stream_opener=stream_opener, # type: ignore
+                file_name=track.name,
+                file_size=file_size
+            )
+            
+        db_track = await track_service.create(
+            track,
+            id=cloud_response.id,
+            size=cloud_response.size,
+            uploaded_by=current_user.id
+        )
+        if not db_track:
+            await cloud_service.remove_file(cloud_response.id,cloud_response.filename)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='The track was not uploaded'
+            )
+        return db_track
+    except HTTPException:
+        raise
+    except Exception as ex:
+        if cloud_response:
+            await cloud_service.remove_file(cloud_response.id,cloud_response.filename)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='The track was not uploaded'
+            detail='An unexpected error has ocurred'
         )
-    return db_track
+    finally:
+        await data.close()
 
 @router.get(
     '',
@@ -55,7 +93,7 @@ async def get_tracks(
 ):
     return await service.get(
         limit,
-        page*ENVIRONMENT.PAGE_SIZE
+        page*limit
     )
 
 @router.get(

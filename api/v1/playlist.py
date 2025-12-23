@@ -36,7 +36,7 @@ async def get_playlists(
 ):
     return await service.get(
         limit,
-        page*ENVIRONMENT.PAGE_SIZE
+        page*limit
     )
 
 @router.get(

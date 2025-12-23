@@ -61,7 +61,6 @@ class Settings:
             'MAX_USER_PASSWORD_LENGTH',
             'maximun length for password'
         ))
-        self._page_size:int = int(os.getenv('PAGE_SIZE','size of pages in pagination'))
         self._allowed_origins:List[str] = json.loads(os.getenv(
             'ALLOWED_ORIGINS',
             'origins allowed to make requests to this api'
@@ -119,6 +118,14 @@ class Settings:
             'BACKBLAZEB2_URL_LIFETIME',
             'lifetime of an authorization token for an url public'
         ))
+        self._max_track_size:int = int(os.getenv(
+            'MAX_TRACK_SIZE',
+            'max size allowed for uploading'
+        ))
+        self._streaming_threshold:int = int(os.getenv(
+            'STREAMING_THRESHOLD',
+            'marks when to use streaming to upload files'
+        ))
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -132,6 +139,26 @@ class Settings:
             cls._instance = Settings()
         return cls._instance
     
+    @property
+    def STREAMING_THRESHOLD(self) -> int:
+        '''
+        Docstring for STREAMING_THRESHOLD
+        
+        :return: the umbral to pass to streaming uploading, in bytes
+        :rtype: int
+        '''
+        return self._streaming_threshold * 1024 * 1024
+    
+    @property
+    def MAX_TRACK_SIZE(self) -> int:
+        '''
+        Docstring for MAX_TRACK_SIZE
+        
+        :return: the max track size in bytes
+        :rtype: int
+        '''
+        return self._max_track_size * 1024 * 1024
+
     @property
     def BACKBLAZEB2_URL_LIFETIME(self) -> int:
         return self._backblazeb2_url_lifetime
@@ -190,13 +217,6 @@ class Settings:
     @property
     def ALLOWED_METHODS(self) -> List[str]:
         return self._allowed_methods
-
-    @property
-    def PAGE_SIZE(self) -> int:
-        '''
-        size of pages in pagination
-        '''
-        return self._page_size
 
     @property
     def MIN_USERNAME_LENGTH(self) -> int:
