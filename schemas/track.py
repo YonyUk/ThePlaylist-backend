@@ -17,7 +17,7 @@ class TrackUploadSchema(TrackBaseSchema):
     schema for 'Track' upload operation
     '''
 
-class TrakUpdateSchema(TrackBaseSchema):
+class TrackUpdateSchema(TrackBaseSchema):
     '''
     Docstring for TrakUpdateSchema
     

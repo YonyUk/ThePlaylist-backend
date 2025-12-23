@@ -1,7 +1,7 @@
 from fastapi import HTTPException,status
 from repositories import TrackRepository
 from models import Track
-from schemas import TrackUploadSchema,TrakUpdateSchema,TrackSchema,TrackDownloadSchema
+from schemas import TrackUploadSchema,TrackUpdateSchema,TrackSchema,TrackDownloadSchema
 from .service import Service
 from .external.upload_download import BackBlazeB2Service
 
@@ -9,13 +9,13 @@ class TrackService(Service[
     Track,
     TrackRepository,
     TrackUploadSchema,
-    TrakUpdateSchema,
+    TrackUpdateSchema,
     TrackSchema
 ]):
     def __init__(self, repository: TrackRepository, exclude_fields: set = set(), exclude_unset: bool = True):
         super().__init__(Track, TrackSchema,repository, exclude_fields, exclude_unset)
     
-    async def update(self, id: str, update_data: TrakUpdateSchema) -> TrackSchema | None:
+    async def update(self, id: str, update_data: TrackUpdateSchema) -> TrackSchema | None:
         db_instance = await self.get_by_id(id)
         if not db_instance:
             return None
