@@ -10,7 +10,7 @@ from repositories import (
 from .user import UserService
 from .auth import AuthService,_oauth2_schema
 from .playlist import PlaylistService
-from .external.upload_download import BackBlazeB2Service
+from .external import BackBlazeB2Service,get_backblazeb2_service
 from .track import TrackService
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
 

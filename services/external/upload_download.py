@@ -77,7 +77,7 @@ class BackBlazeB2Service:
                 detail=f'An unexpected error has ocurred: {e}'
             )
         
-    async def get_file_by_id(self,track:TrackSchema) -> TrackDownloadSchema:
+    async def get_file(self,track:TrackSchema) -> TrackDownloadSchema:
         '''
         Docstring for get_file_by_id
         
