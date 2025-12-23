@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, String,Float,Table
+from sqlalchemy import Column, ForeignKey, String,Integer,BigInteger,Table
 from sqlalchemy.orm import mapped_column,Mapped,relationship
 from uuid import uuid4
 from database import BaseModel
@@ -22,7 +22,12 @@ class Track(BaseModel):
     id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
     name:Mapped[String] = mapped_column(String,nullable=False)
     author_name:Mapped[String] = mapped_column(String,nullable=False)
-    size:Mapped[Float] = mapped_column(Float,nullable=False)
+    size:Mapped[Integer] = mapped_column(Integer,nullable=False)
+    likes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    dislikes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    plays:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    loves:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
+    uploaded_by:Mapped[String] = mapped_column(String,ForeignKey('users.id',ondelete='CASCADE'),nullable=False)
 
     playlists = relationship(
         'Playlist',
