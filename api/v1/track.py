@@ -29,8 +29,12 @@ async def upload_track(
     track = TrackUploadSchema(name=f'{track_name}{extension}',author_name=author_name)
     track_data = await data.read()
     cloud_response = await cloud_service.upload_file(track_data,track.name)
-
-    return await track_service.create(track,id=cloud_response.id,size=cloud_response.size)
+    return await track_service.create(
+        track,
+        id=cloud_response.id,
+        size=cloud_response.size,
+        uploaded_by=current_user.id
+    )
 
 @router.get(
     '',
@@ -103,6 +107,11 @@ async def delete(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No track with id {track_id} was found'
+        )
+    if current_user.id != db_track.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="a track can only be deleted by it's uploader"
         )
     cloud_deleted = await cloud_service.remove_file(track_id,db_track.name)
     if not cloud_deleted:
