@@ -13,7 +13,7 @@ class PlaylistService(Service[
 ]):
     
     def __init__(self,repository: PlaylistRepository, exclude_fields:set=set(), exclude_unset: bool = True):
-        super().__init__(Playlist, repository, exclude_fields, exclude_unset)
+        super().__init__(Playlist,PlaylistSchema,repository, exclude_fields, exclude_unset)
     
     async def update(self, id: str, update_data: PlaylistUpdateSchema) -> PlaylistSchema | None:
         db_instance = await self.get_by_id(id)

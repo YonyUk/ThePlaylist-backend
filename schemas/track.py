@@ -32,6 +32,10 @@ class TrackSchema(TrackBaseSchema):
     '''
     id:str
     size:int
+    likes:int
+    dislikes:int
+    loves:int
+    plays:int
     playlists:List[str]
 
     class Config:

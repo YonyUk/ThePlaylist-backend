@@ -84,13 +84,18 @@ class Repository(Generic[ModelType],ABC):
         :return: the created instance if success, else None
         :rtype: ModelType | None
         '''
-        db_instance = await self._try_get_instance(instance)
-        if db_instance:
+        try:
+            async with self._db.begin():                
+                db_instance = await self._try_get_instance(instance)
+                if db_instance:
+                    return None
+                self._db.add(instance)
+                await self._db.commit()
+                await self._db.refresh(instance)
+                return instance
+        except Exception:
+            await self._db.rollback()
             return None
-        self._db.add(instance)
-        await self._db.commit()
-        await self._db.refresh(instance)
-        return instance
     
     async def update(self,instance_id:str,update_instance:ModelType) -> ModelType | None:
         '''
@@ -103,17 +108,22 @@ class Repository(Generic[ModelType],ABC):
         :return: the instance with the data updated if success, else None
         :rtype: ModelType | None
         '''
-        db_instance = await self.get_by_id(instance_id)
-        if not db_instance:
-            return None
-        update_data = self._instance_to_dict(update_instance)
-        await self._db.execute(
-            update(self._model).where(self._model.id==instance_id).values(**update_data)
-        )
-        await self._db.commit()
-        await self._db.refresh(db_instance)
+        try:
+            async with self._db.begin():
+                db_instance = await self.get_by_id(instance_id)
+                if not db_instance:
+                    return None
+                update_data = self._instance_to_dict(update_instance)
+                await self._db.execute(
+                    update(self._model).where(self._model.id==instance_id).values(**update_data)
+                )
+                await self._db.commit()
+                await self._db.refresh(db_instance)
 
-        return db_instance
+                return db_instance
+        except Exception:
+            await self._db.rollback()
+            return None
     
     async def delete(self,instance_id:str) -> bool:
         '''
@@ -124,10 +134,14 @@ class Repository(Generic[ModelType],ABC):
         :return: True if the instance was deleted successfully, False otherwise 
         :rtype: bool
         '''
-
-        db_instance = await self.get_by_id(instance_id)
-        if not db_instance:
+        try:
+            async with self._db.begin():
+                db_instance = await self.get_by_id(instance_id)
+                if not db_instance:
+                    return False
+                await self._db.delete(db_instance)
+                await self._db.commit()
+                return True
+        except Exception:
+            await self._db.rollback()
             return False
-        await self._db.delete(db_instance)
-        await self._db.commit()
-        return True

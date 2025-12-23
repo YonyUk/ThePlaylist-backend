@@ -13,7 +13,7 @@ class TrackService(Service[
     TrackSchema
 ]):
     def __init__(self, repository: TrackRepository, exclude_fields: set = set(), exclude_unset: bool = True):
-        super().__init__(Track, repository, exclude_fields, exclude_unset)
+        super().__init__(Track, TrackSchema,repository, exclude_fields, exclude_unset)
     
     async def update(self, id: str, update_data: TrakUpdateSchema) -> TrackSchema | None:
         db_instance = await self.get_by_id(id)

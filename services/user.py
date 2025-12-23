@@ -19,7 +19,7 @@ class UserService(Service[
         exclude_fields: set = set(),
         exclude_unset: bool = True
     ):
-        super().__init__(User, repository, exclude_fields, exclude_unset)
+        super().__init__(User, UserSchema,repository, exclude_fields, exclude_unset)
         self._crypt_context = ENVIRONMENT.CRYPT_CONTEXT
     
     async def _get_instance(self, **fields) -> User:
@@ -45,7 +45,8 @@ class UserService(Service[
         :type username: str
         :rtype: UserSchema | None
         '''
-        return await self._repository.get_by_name(username)
+        db_user = await self._repository.get_by_name(username)
+        return await self._to_schema(db_user)
     
     async def get_by_email(self,email:str) -> UserSchema | None:
         '''
@@ -54,4 +55,5 @@ class UserService(Service[
         :type email: str
         :rtype: UserSchema | None
         '''
-        return await self._repository.get_by_email(email)
+        db_user = await self._repository.get_by_email(email)
+        return await self._to_schema(db_user)

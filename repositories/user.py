@@ -28,7 +28,7 @@ class UserRepository(Repository[User]):
         
         :type username: str
         :return: the users with the same username
-        :rtype: Sequence[User]
+        :rtype: User
         '''
         query = select(User).where(User.username==username)
         result = await self._db.execute(query)

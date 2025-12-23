@@ -20,6 +20,7 @@ class Service(Generic[
     def __init__(
         self,
         model:type[ModelType],
+        schema:type[SchemaType],
         repository:RepositoryType,
         exclude_fields:set=set(),
         exclude_unset:bool=True
@@ -38,6 +39,7 @@ class Service(Generic[
         '''
 
         self._model = model
+        self._schema = schema
         self._repository = repository
         self._exclude_fields = exclude_fields
         self._exclude_unset = exclude_unset or len(exclude_fields) > 0
@@ -51,7 +53,9 @@ class Service(Generic[
         :return: the schema for this instance
         :rtype: SchemaType | None
         '''
-        return model
+        if not model:
+            return None
+        return self._schema.model_validate(model)
     
     async def _get_instance(self,**fields) -> ModelType:
         '''

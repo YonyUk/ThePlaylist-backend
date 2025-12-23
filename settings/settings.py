@@ -121,8 +121,9 @@ class Settings:
         ))
 
     def _get_boolean(self,value:str) -> bool:
+        value = value.strip().lower()
         if not value in ['false','true']:
-            raise ValueError('PRODUCTION key must be "true" or "false"')
+            raise ValueError(f'PRODUCTION key must be "true" or "false", got: {value}')
         return value == 'true'
 
     @classmethod
