@@ -53,17 +53,18 @@ async def upload_track(
     cloud_response = None
     
     try:
+        data.file.seek(0)
+
         if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
             track_data = await data.read()
-            cloud_response = await cloud_service.upload_file(track_data,track_name)
+            cloud_response = await cloud_service.upload_file(track_data,f'{track_name}{extension}')
         else:
             def stream_opener():
-                data.file.seek(0)
                 return data.file
             
             cloud_response = await cloud_service.upload_file_streaming(
                 stream_opener=stream_opener, # type: ignore
-                file_name=track_name,
+                file_name=f'{track_name}{extension}',
                 file_size=file_size
             )
         
@@ -176,7 +177,7 @@ async def delete(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="a track can only be deleted by it's uploader"
         )
-    cloud_deleted = await cloud_service.remove_file(track_id,db_track.name)
+    cloud_deleted = await cloud_service.remove_file(db_track.file_id,db_track.name)
     if not cloud_deleted:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

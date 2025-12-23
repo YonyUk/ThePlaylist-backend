@@ -143,7 +143,7 @@ class BackBlazeB2Service:
         :rtype: TrackDownloadSchema
         '''
         try:
-            file = self._api.get_file_info(track.id)
+            file = self._api.get_file_info(track.file_id)
             authorization_token = self._bucket.get_download_authorization(
                 file_name_prefix=file.file_name,
                 valid_duration_in_seconds=ENVIRONMENT.BACKBLAZEB2_URL_LIFETIME
