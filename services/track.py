@@ -1,9 +1,7 @@
-from fastapi import HTTPException,status
 from repositories import TrackRepository
 from models import Track
-from schemas import TrackUploadSchema,TrackUpdateSchema,TrackSchema,TrackDownloadSchema
+from schemas import TrackUploadSchema,TrackUpdateSchema,TrackSchema
 from .service import Service
-from .external.upload_download import BackBlazeB2Service
 
 class TrackService(Service[
     Track,

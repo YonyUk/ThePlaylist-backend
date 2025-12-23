@@ -23,7 +23,6 @@ class UserService(Service[
         self._crypt_context = ENVIRONMENT.CRYPT_CONTEXT
     
     async def _get_instance(self, **fields) -> User:
-        # breakpoint()
         if fields['password']:
             password = fields['password']
             fields['hashed_password'] = self._crypt_context.hash(password)
