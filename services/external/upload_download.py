@@ -1,5 +1,6 @@
 import mimetypes
 import datetime
+import asyncio
 from io import IOBase
 from typing import Callable
 from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream,FileVersion
@@ -47,16 +48,19 @@ class BackBlazeB2Service:
         )
 
         try:
-            uploaded_file = self._bucket.upload(
+            loop = asyncio.get_event_loop()
+            uploaded_file:FileVersion = await loop.run_in_executor(
+                None,
+                lambda:self._bucket.upload(
                 upload_source=upload_source,
                 file_name=file_name,
                 content_type=content_type
-            )
+            ))
 
             return TrackUploadedSchema(
                 id=uploaded_file.id_,
                 filename=uploaded_file.file_name,
-                content_type=uploaded_file.content_type,
+                content_type=str(uploaded_file.content_type),
                 content_sha1=uploaded_file.content_sha1,
                 size=uploaded_file.size,
                 uploaded_at=datetime.datetime.fromtimestamp(
@@ -102,11 +106,14 @@ class BackBlazeB2Service:
             
         upload_source = UploadSourceBytes(file_data)
         try:
-            uploaded_file:FileVersion = self._bucket.upload(
+            loop = asyncio.get_event_loop()
+            uploaded_file:FileVersion = await loop.run_in_executor(
+                None,
+                lambda:self._bucket.upload(
                 upload_source=upload_source,
                 file_name=file_name,
                 content_type=content_type
-            )
+            ))
 
             return TrackUploadedSchema(
                 id=uploaded_file.id_,
@@ -143,12 +150,21 @@ class BackBlazeB2Service:
         :rtype: TrackDownloadSchema
         '''
         try:
-            file = self._api.get_file_info(track.file_id)
-            authorization_token = self._bucket.get_download_authorization(
+            loop = asyncio.get_event_loop()
+            file = await loop.run_in_executor(
+                None,
+                lambda:self._api.get_file_info(track.file_id)
+            )
+            authorization_token = await loop.run_in_executor(
+                None,
+                lambda:self._bucket.get_download_authorization(
                 file_name_prefix=file.file_name,
                 valid_duration_in_seconds=ENVIRONMENT.BACKBLAZEB2_URL_LIFETIME
+            ))
+            url = await loop.run_in_executor(
+                None,
+                lambda:self._api.get_download_url_for_file_name(self._bucket.name,file.file_name)
             )
-            url = self._api.get_download_url_for_file_name(self._bucket.name,file.file_name)
             return TrackDownloadSchema(
                 id=track.id,
                 size=track.size,
@@ -182,11 +198,17 @@ class BackBlazeB2Service:
         :rtype: TrackUploadedSchema
         '''
         try:
-            new_file = self._bucket.copy(
+            loop = asyncio.get_event_loop()
+            new_file = await loop.run_in_executor(
+                None,
+                lambda:self._bucket.copy(
                 file_id=file_id,
                 new_file_name=new_file_name
+            ))
+            await loop.run_in_executor(
+                None,
+                lambda:self._api.delete_file_version(file_id,file_name,True)
             )
-            self._api.delete_file_version(file_id,file_name,True)
             return TrackUploadedSchema(
                 id=new_file.id_,
                 filename=new_file.file_name,
@@ -215,8 +237,19 @@ class BackBlazeB2Service:
             )
 
     async def remove_file(self,file_id:str,file_name:str) -> bool:
+        '''
+        Docstring for remove_file
+        
+        :type file_id: str
+        :type file_name: str
+        :rtype: bool
+        '''
         try:
-            self._api.delete_file_version(file_id,file_name,True)
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                lambda:self._api.delete_file_version(file_id,file_name,True)
+            )
             return True
         except B2RequestTimeout as e:
             raise HTTPException(

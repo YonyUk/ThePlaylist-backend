@@ -37,8 +37,10 @@ async def upload_track(
     data.file.seek(0)
 
     hasher = sha256()
+    chunks = []
     chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
     while chunk:
+        chunks.append(chunk)
         hasher.update(chunk)
         chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
     
@@ -56,7 +58,7 @@ async def upload_track(
         data.file.seek(0)
 
         if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
-            track_data = await data.read()
+            track_data = b''.join(chunks)
             cloud_response = await cloud_service.upload_file(track_data,f'{track_name}{extension}')
         else:
             def stream_opener():
