@@ -113,7 +113,7 @@ async def verify_user_authenticated(
 )
 async def get_users(
     page:int=Query(0,description='page of results',ge=0),
-    limit:int=Query(1,description='limit of results',ge=1),
+    limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
     service:UserService=Depends(get_user_service)
 ):
     return await service.get(

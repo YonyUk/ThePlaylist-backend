@@ -31,7 +31,7 @@ async def create(
 )
 async def get_playlists(
     page:int=Query(0,description='page of results',ge=0),
-    limit:int=Query(1,description='limit of results',ge=1),
+    limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
     service:PlaylistService=Depends(get_playlist_service)
 ):
     return await service.get(

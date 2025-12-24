@@ -130,6 +130,10 @@ class Settings:
             'CHUNK_SIZE',
             'chunk size to read files'
         ))
+        self._max_limit_allowed:int = int(os.getenv(
+            'MAX_LIMIT_ALLOWED',
+            'max limit allowed in a get endpoint'
+        ))
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -142,6 +146,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def MAX_LIMIT_ALLOWED(self) -> int:
+        return self._max_limit_allowed
     
     @property
     def CHUNK_SIZE(self) -> int:
