@@ -1,6 +1,5 @@
 from sqlalchemy import Column, ForeignKey, String,Integer,BigInteger,Table
 from sqlalchemy.orm import mapped_column,Mapped,relationship
-from uuid import uuid4
 from database import BaseModel
 
 playlists_tracks = Table(
@@ -19,7 +18,7 @@ class Track(BaseModel):
 
     __tablename__ = 'tracks'
 
-    id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
+    id:Mapped[String] = mapped_column(String,primary_key=True)
     file_id:Mapped[String] = mapped_column(String,unique=True,index=True,nullable=False)
     content_hash:Mapped[String] = mapped_column(String,unique=True,nullable=False,index=True)
     name:Mapped[String] = mapped_column(String,nullable=False)

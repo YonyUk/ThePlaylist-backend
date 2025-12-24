@@ -1,6 +1,5 @@
 from sqlalchemy import String,BigInteger,ForeignKey
 from sqlalchemy.orm import mapped_column,Mapped,relationship
-from uuid import uuid4
 from database import BaseModel
 
 class Playlist(BaseModel):
@@ -12,7 +11,7 @@ class Playlist(BaseModel):
 
     __tablename__ = 'playlists'
     
-    id:Mapped[String] = mapped_column(String,primary_key=True,default=lambda:str(uuid4()))
+    id:Mapped[String] = mapped_column(String,primary_key=True)
     name:Mapped[String] = mapped_column(String,nullable=False)
     likes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)
     dislikes:Mapped[BigInteger] = mapped_column(BigInteger,default=0)

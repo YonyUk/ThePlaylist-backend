@@ -1,5 +1,6 @@
 from typing import Sequence,Generic,TypeVar
 from pydantic import BaseModel as SchemaBaseModel
+from uuid import uuid4
 from database import BaseModel as DataBaseModel
 from repositories.repository import Repository
 
@@ -110,7 +111,10 @@ class Service(Generic[
                     exclude=self._exclude_fields,
                     exclude_unset=self._exclude_unset
                 ),
-                **extra_fields
+                **extra_fields,
+                **{
+                    'id':str(uuid4())
+                }
             }
         )
         db_instance = await self._repository.create(db_instance)
