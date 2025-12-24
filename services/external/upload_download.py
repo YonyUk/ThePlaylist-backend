@@ -2,7 +2,7 @@ import mimetypes
 import datetime
 from io import IOBase
 from typing import Callable
-from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream
+from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream,FileVersion
 from b2sdk.v2.exception import B2ConnectionError,B2Error,B2RequestTimeout
 from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema
 from settings import ENVIRONMENT
@@ -102,7 +102,7 @@ class BackBlazeB2Service:
             
         upload_source = UploadSourceBytes(file_data)
         try:
-            uploaded_file = self._bucket.upload(
+            uploaded_file:FileVersion = self._bucket.upload(
                 upload_source=upload_source,
                 file_name=file_name,
                 content_type=content_type
@@ -111,7 +111,7 @@ class BackBlazeB2Service:
             return TrackUploadedSchema(
                 id=uploaded_file.id_,
                 filename=uploaded_file.file_name,
-                content_type=uploaded_file.content_type,
+                content_type=str(uploaded_file.content_type),
                 content_sha1=uploaded_file.content_sha1,
                 size=uploaded_file.size,
                 uploaded_at=datetime.datetime.fromtimestamp(
@@ -172,6 +172,48 @@ class BackBlazeB2Service:
                 detail=f'An unexpected error has ocurred: {e}'
             )
     
+    async def rename_file(self,file_id:str,file_name:str,new_file_name:str) -> TrackUploadedSchema:
+        '''
+        Docstring for rename_file
+        
+        :type file_id: str
+        :type file_name: str
+        :type new_file_name: str
+        :rtype: TrackUploadedSchema
+        '''
+        try:
+            new_file = self._bucket.copy(
+                file_id=file_id,
+                new_file_name=new_file_name
+            )
+            self._api.delete_file_version(file_id,file_name,True)
+            return TrackUploadedSchema(
+                id=new_file.id_,
+                filename=new_file.file_name,
+                content_type=str(new_file.content_type),
+                content_sha1=new_file.content_sha1,
+                size=new_file.size,
+                uploaded_at=datetime.datetime.fromtimestamp(
+                    new_file.upload_timestamp / 1000,
+                    datetime.UTC
+                )
+            )
+        except B2RequestTimeout as e:
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail='The upgrade process took too long to complete'
+            )
+        except B2ConnectionError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'Connection failed: {e}'
+            )
+        except B2Error as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f'An unexpected error has ocurred: {e}'
+            )
+
     async def remove_file(self,file_id:str,file_name:str) -> bool:
         try:
             self._api.delete_file_version(file_id,file_name,True)

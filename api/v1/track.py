@@ -148,19 +148,25 @@ async def get_track_url(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No track with id "{track_id}" was found'
         )
-    cloud_track = await cloud_service.get_file(db_track)
-    if not cloud_track:
+    try:
+        cloud_track = await cloud_service.get_file(db_track)
+    
+        return TrackDownloadSchema(
+            id=db_track.id,
+            size=cloud_track.size,
+            name=db_track.name,
+            author_name=db_track.author_name,
+            url=cloud_track.url
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='The file was not found in the cloud'
+            detail=f'An unexpected error has ocurred: {e}'
         )
-    return TrackDownloadSchema(
-        id=db_track.id,
-        size=cloud_track.size,
-        name=db_track.name,
-        author_name=db_track.author_name,
-        url=cloud_track.url
-    )
+
 
 @router.put(
     '/{track_id}',
@@ -171,6 +177,7 @@ async def update(
     track_id:str,
     update_data:TrackUpdateSchema,
     service:TrackService=Depends(get_track_service),
+    cloud_service:BackBlazeB2Service=Depends(get_backblazeb2_service),
     current_user:UserSchema=Depends(get_current_user),
 ):
     db_track = await service.get_by_id(track_id)
@@ -179,25 +186,56 @@ async def update(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No track with id "{track_id}" was found'
         )
+    
+    file_id = db_track.file_id
+    file_name = db_track.name
+
     if current_user.id != db_track.uploaded_by:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Only can modify data of your uploaded tracks'
         )
-    db_track = await service.update(
-        track_id,
-        update_data,
-        size=db_track.size,
-        file_id=db_track.file_id,
-        content_hash=db_track.content_hash,
-        uploaded_by=current_user.id
-    )
-    if not db_track:
+    
+    extension = Path(db_track.name).suffix
+    cloud_response = None
+    try:
+        cloud_response = await cloud_service.rename_file(
+            db_track.file_id,
+            db_track.name,
+            f'{update_data.name}{extension}'
+        )
+
+        update_data.name = f'{update_data.name}{extension}'
+
+        db_track = await service.update(
+            track_id,
+            update_data,
+            size=cloud_response.size,
+            file_id=cloud_response.id,
+            content_hash=db_track.content_hash,
+            uploaded_by=current_user.id
+        )
+        if not db_track:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='An unexpected error has ocurred while updating track info'
+            )
+        return db_track
+    except HTTPException:
+        raise
+    except Exception as e:
+        if cloud_response:
+            cloud_response = await cloud_service.rename_file(
+                file_id,
+                f'{update_data.name}{extension}',
+                file_name
+            )
+        logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='An unexpected error has ocurred while updating track info'
+            detail='An unexpected error has ocurred'
         )
-    return db_track
+
 
 @router.delete(
     '/{track_id}',
@@ -209,7 +247,6 @@ async def delete(
     current_user:UserSchema=Depends(get_current_user),
     cloud_service:BackBlazeB2Service=Depends(get_backblazeb2_service)
 ):
-    # breakpoint()
     db_track = await service.get_by_id(track_id)
     if not db_track:
         raise HTTPException(
