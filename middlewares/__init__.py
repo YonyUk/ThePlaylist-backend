@@ -1,1 +1,2 @@
 from .rate_limiter_middleware import RateLimitMiddleware
+from .timeout import TimeoutMiddleware

@@ -5,7 +5,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 import logging
 
-from middlewares import RateLimitMiddleware
+from middlewares import RateLimitMiddleware,TimeoutMiddleware
 from api.v1.user import router as UserRouter
 from api.v1.playlist import router as PlaylistRouter
 from api.v1.track import router as TrackRouter
@@ -23,6 +23,7 @@ app = FastAPI(
 )
 
 app.add_middleware(RateLimitMiddleware)
+app.add_middleware(TimeoutMiddleware,timeout_seconds=30)
 
 app.add_middleware(
     CORSMiddleware,
