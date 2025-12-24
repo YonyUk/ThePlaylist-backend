@@ -100,12 +100,15 @@ class InMemoryRateLimiter:
         return f"{rule_type}:{client_ip}:{endpoint}"
     
     def _get_rule(self, bucket_key: str) -> Rule:
-        """Obtiene la regla aplicable para una clave de bucket."""
         rule_type = bucket_key.split(":")[0]
         return self.rules.get(rule_type, self.rules["global"])
     
     def _cleanup_old_buckets(self):
-        """Limpia buckets antiguos para evitar memory leaks."""
+        '''
+        Docstring for _cleanup_old_buckets
+
+        cleanup the old buckets to avoid memory leaks        
+        '''
         with self._lock:
             current_time = time.time()
             if current_time - self._last_cleanup < self._cleanup_interval:
@@ -124,18 +127,20 @@ class InMemoryRateLimiter:
             logger.debug(f"Cleaned up {len(keys_to_delete)} old buckets")
     
     def is_allowed(self, request: Request, cost: float = 1.0) -> Tuple[bool, float]:
-        """
-        Verifica si una request está permitida.
-        Retorna: (allowed, retry_after_seconds)
-        """
-        # Ejecutar limpieza periódica
+        '''
+        Docstring for is_allowed
+        
+        :type request: Request
+        :type cost: float
+        :return: verify if a request is allowed
+        :rtype: Tuple[bool, float] (allowed, retry_after_seconds)
+        '''
         self._cleanup_old_buckets()
         
         bucket_key = self._get_bucket_key(request)
         rule = self._get_rule(bucket_key)
         
         with self._lock:
-            # Obtener o crear el bucket
             if bucket_key not in self.buckets:
                 self.buckets[bucket_key] = TokenBucket(
                     capacity=rule.capacity,
@@ -144,7 +149,6 @@ class InMemoryRateLimiter:
             
             bucket = self.buckets[bucket_key]
             
-            # Verificar rate limit
             if bucket.consume(cost):
                 return True, 0
             else:
@@ -152,13 +156,11 @@ class InMemoryRateLimiter:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Middleware de FastAPI para rate limiting en memoria."""
     
     def __init__(self, app, rate_limiter: Optional[InMemoryRateLimiter] = None):
         super().__init__(app)
         self.limiter = rate_limiter or InMemoryRateLimiter()
         
-        # Costos por operación (ajustables según complejidad)
         self.operation_costs = CONFIG.operations_costs
     
     async def dispatch(self, request: Request, call_next):
