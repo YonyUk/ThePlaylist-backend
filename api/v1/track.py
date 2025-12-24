@@ -109,7 +109,7 @@ async def upload_track(
 )
 async def get_tracks(
     page:int=Query(0,description='page of results',ge=0),
-    limit:int=Query(1,description='limit of results',ge=1),
+    limit:int=Query(1,description='limit of results',ge=1,le=100),
     service:TrackService=Depends(get_track_service)
 ):
     return await service.get(

@@ -48,9 +48,7 @@ class BackBlazeB2Service:
         )
 
         try:
-            loop = asyncio.get_event_loop()
-            uploaded_file:FileVersion = await loop.run_in_executor(
-                None,
+            uploaded_file:FileVersion = await asyncio.to_thread(
                 lambda:self._bucket.upload(
                 upload_source=upload_source,
                 file_name=file_name,
@@ -106,9 +104,7 @@ class BackBlazeB2Service:
             
         upload_source = UploadSourceBytes(file_data)
         try:
-            loop = asyncio.get_event_loop()
-            uploaded_file:FileVersion = await loop.run_in_executor(
-                None,
+            uploaded_file:FileVersion = await asyncio.to_thread(
                 lambda:self._bucket.upload(
                 upload_source=upload_source,
                 file_name=file_name,
@@ -150,19 +146,15 @@ class BackBlazeB2Service:
         :rtype: TrackDownloadSchema
         '''
         try:
-            loop = asyncio.get_event_loop()
-            file = await loop.run_in_executor(
-                None,
+            file = await asyncio.to_thread(
                 lambda:self._api.get_file_info(track.file_id)
             )
-            authorization_token = await loop.run_in_executor(
-                None,
+            authorization_token = await asyncio.to_thread(
                 lambda:self._bucket.get_download_authorization(
                 file_name_prefix=file.file_name,
                 valid_duration_in_seconds=ENVIRONMENT.BACKBLAZEB2_URL_LIFETIME
             ))
-            url = await loop.run_in_executor(
-                None,
+            url = await asyncio.to_thread(
                 lambda:self._api.get_download_url_for_file_name(self._bucket.name,file.file_name)
             )
             return TrackDownloadSchema(
@@ -198,15 +190,12 @@ class BackBlazeB2Service:
         :rtype: TrackUploadedSchema
         '''
         try:
-            loop = asyncio.get_event_loop()
-            new_file = await loop.run_in_executor(
-                None,
+            new_file = await asyncio.to_thread(
                 lambda:self._bucket.copy(
                 file_id=file_id,
                 new_file_name=new_file_name
             ))
-            await loop.run_in_executor(
-                None,
+            await asyncio.to_thread(
                 lambda:self._api.delete_file_version(file_id,file_name,True)
             )
             return TrackUploadedSchema(
