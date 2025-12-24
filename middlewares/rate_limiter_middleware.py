@@ -86,17 +86,15 @@ class InMemoryRateLimiter:
         client_ip = request.client.host if request.client else "unknown"
         endpoint = request.url.path
         
-        rule_found = False
         rule_type = "global"
+        max_length = 0
+
         for key,paths in CONFIG.endpoints.items():
             for path in paths:
-                if path in endpoint:
+                if (path in endpoint) and (max_length < len(path)):
                     rule_type = key
-                    rule_found = True
-                    break
-            if rule_found:
-                break
-        
+                    max_length = len(path)
+                
         return f"{rule_type}:{client_ip}:{endpoint}"
     
     def _get_rule(self, bucket_key: str) -> Rule:

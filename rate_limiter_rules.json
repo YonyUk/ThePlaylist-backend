@@ -1,7 +1,8 @@
 {
     "cleanup_interval": 300,
-    "operations_cost_factors": {
-        "/upload": 3.0
+    "operations_costs_factors": {
+        "/upload": 3.0,
+        "/download":3.0
     },
     "operations_costs": {
         "GET": 1.0,
@@ -20,6 +21,9 @@
         ],
         "api": [
             "/api/"
+        ],
+        "download":[
+            "/tracks/download"
         ]
     },
     "rules_def": {
@@ -32,12 +36,16 @@
             "rate": 0.0833
         },
         "upload": {
-            "capacity": 3,
+            "capacity": 100,
             "rate": 0.05
         },
         "api": {
-            "capacity": 1,
-            "rate": 1
+            "capacity": 100,
+            "rate": 1.0
+        },
+        "download":{
+            "capacity":100,
+            "rate":0.0166
         }
     }
 }
