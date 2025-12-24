@@ -5,6 +5,7 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 import logging
 
+from middlewares import RateLimitMiddleware
 from api.v1.user import router as UserRouter
 from api.v1.playlist import router as PlaylistRouter
 from api.v1.track import router as TrackRouter
@@ -20,6 +21,9 @@ app = FastAPI(
     docs_url=None,
     redoc_url=None
 )
+
+app.add_middleware(RateLimitMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ENVIRONMENT.ALLOWED_ORIGINS,
@@ -44,6 +48,13 @@ async def internal_server_error(request,exc):
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={'message':'An unexpected error has ocurred'}
+    )
+
+@app.exception_handler(429)
+async def rate_limit_exceded(request,exc):
+    return JSONResponse(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        content={'message':'Too many requests'}
     )
 
 @app.get('/docs',include_in_schema=False)

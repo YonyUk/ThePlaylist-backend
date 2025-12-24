@@ -1,0 +1,43 @@
+{
+    "cleanup_interval": 300,
+    "operations_cost_factors": {
+        "/upload": 3.0
+    },
+    "operations_costs": {
+        "GET": 1.0,
+        "POST": 2.0,
+        "PUT": 2.0,
+        "DELETE": 2.0,
+        "PATCH": 2.0
+    },
+    "endpoints": {
+        "auth": [
+            "/users/token",
+            "/users/register"
+        ],
+        "upload": [
+            "/tracks/upload"
+        ],
+        "api": [
+            "/api/"
+        ]
+    },
+    "rules_def": {
+        "global": {
+            "capacity": 100,
+            "rate": 10
+        },
+        "auth": {
+            "capacity": 5,
+            "rate": 0.0833
+        },
+        "upload": {
+            "capacity": 3,
+            "rate": 0.05
+        },
+        "api": {
+            "capacity": 1,
+            "rate": 1
+        }
+    }
+}

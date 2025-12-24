@@ -134,6 +134,10 @@ class Settings:
             'MAX_LIMIT_ALLOWED',
             'max limit allowed in a get endpoint'
         ))
+        self._json_config_file:str = os.getenv(
+            'JSON_CONFIG_FILE',
+            'file with the configuration'
+        )
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -146,6 +150,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def JSON_CONFIG_FILE(self) -> str:
+        return self._json_config_file
     
     @property
     def MAX_LIMIT_ALLOWED(self) -> int:
