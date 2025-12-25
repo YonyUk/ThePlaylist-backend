@@ -23,7 +23,7 @@ app = FastAPI(
 )
 
 app.add_middleware(RateLimitMiddleware)
-app.add_middleware(TimeoutMiddleware,timeout_seconds=30)
+# app.add_middleware(TimeoutMiddleware,timeout_seconds=30)
 
 app.add_middleware(
     CORSMiddleware,

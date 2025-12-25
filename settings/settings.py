@@ -138,6 +138,10 @@ class Settings:
             'JSON_CONFIG_FILE',
             'file with the configuration'
         )
+        self._allowed_tracks_mime_types:List[str] = json.loads(os.getenv(
+            'ALLOWED_TRACKS_MIME_TYPES',
+            'allowed mime types for audio files upload'
+        ))
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -150,6 +154,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def ALLOWED_TRACKS_MIME_TYPES(self) -> List[str]:
+        return self._allowed_tracks_mime_types
     
     @property
     def JSON_CONFIG_FILE(self) -> str:

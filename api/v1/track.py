@@ -1,4 +1,6 @@
 import logging
+import magic
+import filetype
 from hashlib import sha256
 from typing import Sequence
 from pathlib import Path
@@ -31,6 +33,29 @@ async def upload_track(
         )
     extension = Path(data.filename).suffix
     
+    file_header = await data.read(2048)
+    await data.seek(0)
+
+    mime_type = magic.from_buffer(file_header,mime=True)
+    if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f'Unsupported type file: {mime_type}. Allowed :{ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES}'
+        )
+    
+    kind = filetype.guess(file_header)
+    if not kind:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail='The file is corrupted'
+        )
+    
+    if not f'.{kind.extension}' == extension:
+        raise HTTPException(
+            status_code=status.HTTP_406_NOT_ACCEPTABLE,
+            detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
+        )
+
     # gets the file size
     data.file.seek(0,2)
     file_size = data.file.tell()

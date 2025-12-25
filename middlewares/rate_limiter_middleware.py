@@ -16,7 +16,7 @@ class TokenBucket:
     """Token Bucket algorithm implementation in memory."""
     capacity: float
     refill_rate: float
-    tokens: float = field(default=1.0)
+    tokens: float = field(default=100.0)
     last_refill: float = field(default_factory=time.time)
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
