@@ -41,7 +41,7 @@ class BackBlazeB2Service:
                 detail='Can not connect to backblazeb2 service'
             )
         
-    async def validate_file(self,data:UploadFile) -> None:
+    async def _validate_file(self,data:UploadFile) -> str:
         '''
         Docstring for validate_file
         
@@ -76,9 +76,12 @@ class BackBlazeB2Service:
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
             )
+        
+        return extension
 
     async def upload_file(self,data: UploadFile,track_name:str,author_name:str) -> Tuple[TrackUploadedSchema,str]:
-        extension = Path(data.filename).suffix # type: ignore
+        
+        extension = await self._validate_file(data)
         
         # gets the file size
         data.file.seek(0,2)
