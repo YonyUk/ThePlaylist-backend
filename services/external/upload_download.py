@@ -1,13 +1,20 @@
+from hashlib import sha256
 import mimetypes
 import datetime
 import asyncio
+import logging
 from io import IOBase
-from typing import Callable
+from pathlib import Path
+from typing import Callable, Tuple
 from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream,FileVersion
 from b2sdk.v2.exception import B2ConnectionError,B2Error,B2RequestTimeout
-from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema
+import filetype
+import magic
+from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema,TrackUploadSchema
 from settings import ENVIRONMENT
-from fastapi import HTTPException,status
+from fastapi import HTTPException, UploadFile,status
+
+logger = logging.getLogger(__name__)
 
 class BackBlazeB2Service:
     def __init__(self):
@@ -28,9 +35,98 @@ class BackBlazeB2Service:
                 ENVIRONMENT.BACKBLAZEB2_BUCKET_ID
             )
         except Exception as ex:
-            raise RuntimeError(f'Configuration error: {ex}')
+            logger.error(f'Can not acces to backblazeb2 service: {ex}')
+            raise HTTPException(
+                status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                detail='Can not connect to backblazeb2 service'
+            )
+        
+    async def validate_file(self,data:UploadFile) -> None:
+        '''
+        Docstring for validate_file
+        
+        :type data: UploadFile
+        '''
+        if not data.filename:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'The file does not have a valid filename'
+            )
+        extension = Path(data.filename).suffix
+        
+        file_header = await data.read(2048)
+        await data.seek(0)
     
-    async def upload_file_streaming(
+        mime_type = magic.from_buffer(file_header,mime=True)
+        if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail=f'Unsupported type file: {mime_type}. Allowed :{ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES}'
+            )
+        
+        kind = filetype.guess(file_header)
+        if not kind:
+            raise HTTPException(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                detail='The file is corrupted'
+            )
+        
+        if not f'.{kind.extension}' == extension:
+            raise HTTPException(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
+            )
+
+    async def upload_file(self,data: UploadFile,track_name:str,author_name:str) -> Tuple[TrackUploadedSchema,str]:
+        extension = Path(data.filename).suffix # type: ignore
+        
+        # gets the file size
+        data.file.seek(0,2)
+        file_size = data.file.tell()
+        data.file.seek(0)
+    
+        hasher = sha256()
+        chunks = []
+        chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+        while chunk:
+            chunks.append(chunk)
+            hasher.update(chunk)
+            chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+        
+        content_hash = hasher.hexdigest()
+
+        if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f'File too large. Maximum size allowed is {ENVIRONMENT.MAX_TRACK_SIZE // 1024*1024 }MB'
+            )
+
+        try:
+            data.file.seek(0)
+
+            if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
+                track_data = b''.join(chunks)
+                cloud_response = await self._upload_file(track_data,f'{track_name}{extension}')
+            else:
+                def stream_opener():
+                    return data.file
+
+                cloud_response = await self._upload_file_streaming(
+                    stream_opener=stream_opener, # type: ignore
+                    file_name=f'{track_name}{extension}',
+                    file_size=file_size
+                )            
+            return cloud_response,content_hash
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='An unexpected error has ocurred'
+            )
+
+    async def _upload_file_streaming(
         self,
         stream_opener: Callable[[],IOBase],
         file_name:str,
@@ -74,15 +170,15 @@ class BackBlazeB2Service:
         except B2ConnectionError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Connection failed: {e}'
+                detail=f'Connection failed'
             )
         except B2Error as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'An unexpected error has ocurred: {e}'
+                detail=f'An unexpected error has ocurred'
             )
 
-    async def upload_file(
+    async def _upload_file(
         self,
         file_data:bytes,
         file_name:str,
@@ -130,12 +226,12 @@ class BackBlazeB2Service:
         except B2ConnectionError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Connection failed: {e}'
+                detail=f'Connection failed'
             )
         except B2Error as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'An unexpected error has ocurred: {e}'
+                detail=f'An unexpected error has ocurred'
             )
         
     async def get_file(self,track:TrackSchema) -> TrackDownloadSchema:
@@ -172,12 +268,12 @@ class BackBlazeB2Service:
         except B2ConnectionError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Connection failed: {e}'
+                detail=f'Connection failed'
             )
         except B2Error as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'An unexpected error has ocurred: {e}'
+                detail=f'An unexpected error has ocurred'
             )
     
     async def rename_file(self,file_id:str,file_name:str,new_file_name:str) -> TrackUploadedSchema:
@@ -217,12 +313,12 @@ class BackBlazeB2Service:
         except B2ConnectionError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Connection failed: {e}'
+                detail=f'Connection failed'
             )
         except B2Error as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'An unexpected error has ocurred: {e}'
+                detail=f'An unexpected error has ocurred'
             )
 
     async def remove_file(self,file_id:str,file_name:str) -> bool:
@@ -248,10 +344,10 @@ class BackBlazeB2Service:
         except B2ConnectionError as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'Connection failed: {e}'
+                detail=f'Connection failed'
             )
         except B2Error as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f'An unexpected error has ocurred: {e}'
+                detail=f'An unexpected error has ocurred'
             )

@@ -26,82 +26,67 @@ async def upload_track(
     track_service:TrackService=Depends(get_track_service),
     cloud_service:BackBlazeB2Service=Depends(get_backblazeb2_service)
 ):
-    if not data.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'The file does not have a valid filename'
-        )
-    extension = Path(data.filename).suffix
+    # if not data.filename:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=f'The file does not have a valid filename'
+    #     )
+    # extension = Path(data.filename).suffix
     
-    file_header = await data.read(2048)
-    await data.seek(0)
+    # file_header = await data.read(2048)
+    # await data.seek(0)
 
-    mime_type = magic.from_buffer(file_header,mime=True)
-    if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f'Unsupported type file: {mime_type}. Allowed :{ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES}'
-        )
+    # mime_type = magic.from_buffer(file_header,mime=True)
+    # if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+    #         detail=f'Unsupported type file: {mime_type}. Allowed :{ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES}'
+    #     )
     
-    kind = filetype.guess(file_header)
-    if not kind:
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail='The file is corrupted'
-        )
+    # kind = filetype.guess(file_header)
+    # if not kind:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_406_NOT_ACCEPTABLE,
+    #         detail='The file is corrupted'
+    #     )
     
-    if not f'.{kind.extension}' == extension:
-        raise HTTPException(
-            status_code=status.HTTP_406_NOT_ACCEPTABLE,
-            detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
-        )
+    # if not f'.{kind.extension}' == extension:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_406_NOT_ACCEPTABLE,
+    #         detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
+    #     )
 
-    # gets the file size
-    data.file.seek(0,2)
-    file_size = data.file.tell()
-    data.file.seek(0)
+    # # gets the file size
+    # data.file.seek(0,2)
+    # file_size = data.file.tell()
+    # data.file.seek(0)
 
-    hasher = sha256()
-    chunks = []
-    chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
-    while chunk:
-        chunks.append(chunk)
-        hasher.update(chunk)
-        chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+    # hasher = sha256()
+    # chunks = []
+    # chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+    # while chunk:
+    #     chunks.append(chunk)
+    #     hasher.update(chunk)
+    #     chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
     
-    content_hash = hasher.hexdigest()
+    # content_hash = hasher.hexdigest()
 
-    if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'File too large. Maximum size allowed is {ENVIRONMENT.MAX_TRACK_SIZE // 1024*1024 }MB'
-        )
+    # if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail=f'File too large. Maximum size allowed is {ENVIRONMENT.MAX_TRACK_SIZE // 1024*1024 }MB'
+    #     )
 
     cloud_response = None
     
     try:
-        data.file.seek(0)
-
-        if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
-            track_data = b''.join(chunks)
-            cloud_response = await cloud_service.upload_file(track_data,f'{track_name}{extension}')
-        else:
-            def stream_opener():
-                return data.file
-            
-            cloud_response = await cloud_service.upload_file_streaming(
-                stream_opener=stream_opener, # type: ignore
-                file_name=f'{track_name}{extension}',
-                file_size=file_size
-            )
-        
+        cloud_response,content_hash = await cloud_service.upload_file(data,track_name,author_name)
         track = TrackUploadSchema(
-            name=f'{track_name}{extension}',
+            name=cloud_response.filename,
             author_name=author_name,
             file_id=cloud_response.id,
             content_hash=content_hash
             )
-        # breakpoint()
         db_track = await track_service.create(
             track,
             size=cloud_response.size,
@@ -191,7 +176,7 @@ async def get_track_url(
         logger.error(e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f'An unexpected error has ocurred: {e}'
+            detail=f'An unexpected error has ocurred'
         )
 
 
