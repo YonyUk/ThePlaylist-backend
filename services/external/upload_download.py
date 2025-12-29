@@ -88,15 +88,16 @@ class BackBlazeB2Service:
             chunks.append(chunk)
             hasher.update(chunk)
             chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
-        
+
+        await data.seek(0)
+
         content_hash = hasher.hexdigest()
 
         extension = Path(data.filename).suffix
         
         file_header = await data.read(2048)
         await data.seek(0)
-    
-        mime_type = magic.from_buffer(chunks,mime=True)
+        mime_type = magic.from_buffer(b''.join(chunks),mime=True)
         if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -115,10 +116,10 @@ class BackBlazeB2Service:
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
             )
-        if not f'.{mimetypes.guess_extension(mime_type)}' == kind.extension:
+        if not f'.{kind.extension}' == mimetypes.guess_extension(mime_type):
             raise HTTPException(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                detail=f'The expected extension for the mime type for the given file does not matchs, rejected for security'
+                detail=f'The expected extension for the mime type of the given file does not matchs with the content, rejected for security'
             )
         return FileValidationResult(
             file_size,
