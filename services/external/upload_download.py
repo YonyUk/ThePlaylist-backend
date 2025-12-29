@@ -9,12 +9,34 @@ from typing import Callable, Tuple
 from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream,FileVersion
 from b2sdk.v2.exception import B2ConnectionError,B2Error,B2RequestTimeout
 import filetype
+from filetype.types.image import Dcm as image_dcm
+from filetype.types.archive import Dcm as archive_dcm
 import magic
+import mimetypes
 from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema,TrackUploadSchema
 from settings import ENVIRONMENT
 from fastapi import HTTPException, UploadFile,status
 
 logger = logging.getLogger(__name__)
+
+class FileValidationResult:
+    
+    def __init__(self,size:int,content_hash:str,extension:str):
+        self._size = size
+        self._hash = content_hash
+        self._extension = extension
+
+    @property
+    def size(self) -> int:
+        return self._size
+    
+    @property
+    def hash(self) -> str:
+        return self._hash
+    
+    @property
+    def extension(self) -> str:
+        return self._extension
 
 class BackBlazeB2Service:
     def __init__(self):
@@ -23,6 +45,7 @@ class BackBlazeB2Service:
         
         service to use BackBlazeB2 cloud-storage platform
         '''
+        mimetypes.add_type("audio/x-m4a",'.m4a')
         try:
             self._info = InMemoryAccountInfo()
             self._api = B2Api(self._info) # type: ignore
@@ -41,7 +64,7 @@ class BackBlazeB2Service:
                 detail='Can not connect to backblazeb2 service'
             )
         
-    async def _validate_file(self,data:UploadFile) -> str:
+    async def _validate_file(self,data:UploadFile) -> FileValidationResult:
         '''
         Docstring for validate_file
         
@@ -52,12 +75,28 @@ class BackBlazeB2Service:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'The file does not have a valid filename'
             )
+        
+        # gets the file size
+        data.file.seek(0,2)
+        file_size = data.file.tell()
+        data.file.seek(0)
+    
+        hasher = sha256()
+        chunks = []
+        chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+        while chunk:
+            chunks.append(chunk)
+            hasher.update(chunk)
+            chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
+        
+        content_hash = hasher.hexdigest()
+
         extension = Path(data.filename).suffix
         
         file_header = await data.read(2048)
         await data.seek(0)
     
-        mime_type = magic.from_buffer(file_header,mime=True)
+        mime_type = magic.from_buffer(chunks,mime=True)
         if not mime_type in ENVIRONMENT.ALLOWED_TRACKS_MIME_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -76,29 +115,22 @@ class BackBlazeB2Service:
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 detail=f'The extension of your file is "{extension}" what is different from the content type ".{kind.extension}" detected'
             )
-        
-        return extension
+        if not f'.{mimetypes.guess_extension(mime_type)}' == kind.extension:
+            raise HTTPException(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                detail=f'The expected extension for the mime type for the given file does not matchs, rejected for security'
+            )
+        return FileValidationResult(
+            file_size,
+            content_hash,
+            extension
+        )
 
     async def upload_file(self,data: UploadFile,track_name:str,author_name:str) -> Tuple[TrackUploadedSchema,str]:
         
-        extension = await self._validate_file(data)
-        
-        # gets the file size
-        data.file.seek(0,2)
-        file_size = data.file.tell()
-        data.file.seek(0)
-    
-        hasher = sha256()
-        chunks = []
-        chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
-        while chunk:
-            chunks.append(chunk)
-            hasher.update(chunk)
-            chunk = await data.read(ENVIRONMENT.CHUNK_SIZE)
-        
-        content_hash = hasher.hexdigest()
+        validation_result = await self._validate_file(data)
 
-        if file_size > ENVIRONMENT.MAX_TRACK_SIZE:
+        if validation_result.size > ENVIRONMENT.MAX_TRACK_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f'File too large. Maximum size allowed is {ENVIRONMENT.MAX_TRACK_SIZE // 1024*1024 }MB'
@@ -107,19 +139,19 @@ class BackBlazeB2Service:
         try:
             data.file.seek(0)
 
-            if file_size < ENVIRONMENT.STREAMING_THRESHOLD:
-                track_data = b''.join(chunks)
-                cloud_response = await self._upload_file(track_data,f'{track_name}{extension}')
+            if validation_result.size < ENVIRONMENT.STREAMING_THRESHOLD:
+                track_data = await data.read()
+                cloud_response = await self._upload_file(track_data,f'{track_name}{validation_result.extension}')
             else:
                 def stream_opener():
                     return data.file
 
                 cloud_response = await self._upload_file_streaming(
                     stream_opener=stream_opener, # type: ignore
-                    file_name=f'{track_name}{extension}',
-                    file_size=file_size
+                    file_name=f'{track_name}{validation_result.extension}',
+                    file_size=validation_result.size
                 )            
-            return cloud_response,content_hash
+            return cloud_response,validation_result.hash
         except HTTPException:
             raise
         except Exception as e:
