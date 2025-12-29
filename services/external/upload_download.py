@@ -9,15 +9,16 @@ from typing import Callable, Tuple
 from b2sdk.v2 import InMemoryAccountInfo,B2Api,UploadSourceBytes,UploadSourceStream,FileVersion
 from b2sdk.v2.exception import B2ConnectionError,B2Error,B2RequestTimeout
 import filetype
-from filetype.types.image import Dcm as image_dcm
-from filetype.types.archive import Dcm as archive_dcm
 import magic
 import mimetypes
 from schemas import TrackUploadedSchema,TrackSchema,TrackDownloadSchema,TrackUploadSchema
 from settings import ENVIRONMENT
 from fastapi import HTTPException, UploadFile,status
+from .circuit_breaker import AsyncCircuitBreaker
 
 logger = logging.getLogger(__name__)
+
+circuit = AsyncCircuitBreaker(60,100)
 
 class FileValidationResult:
     
@@ -127,8 +128,19 @@ class BackBlazeB2Service:
             extension
         )
 
-    async def upload_file(self,data: UploadFile,track_name:str,author_name:str) -> Tuple[TrackUploadedSchema,str]:
-        
+    async def upload_file(self,data: UploadFile,track_name:str) -> Tuple[TrackUploadedSchema,str]:
+        return await circuit.execute(lambda:self._internal_upload_file(data,track_name))
+
+    async def get_file(self,track:TrackSchema) -> TrackDownloadSchema:
+        return await circuit.execute(lambda:self._internal_get_file(track))
+    
+    async def rename_file(self,file_id:str,file_name:str,new_file_name:str) -> TrackUploadedSchema:
+        return await circuit.execute(lambda:self._internal_rename_file(file_id,file_name,new_file_name))
+
+    async def remove_file(self,file_id:str,file_name:str) -> bool:
+        return await circuit.execute(lambda:self._internal_remove_file(file_id,file_name))
+
+    async def _internal_upload_file(self,data: UploadFile,track_name:str) -> Tuple[TrackUploadedSchema,str]:
         validation_result = await self._validate_file(data)
 
         if validation_result.size > ENVIRONMENT.MAX_TRACK_SIZE:
@@ -270,7 +282,7 @@ class BackBlazeB2Service:
                 detail=f'An unexpected error has ocurred'
             )
         
-    async def get_file(self,track:TrackSchema) -> TrackDownloadSchema:
+    async def _internal_get_file(self,track:TrackSchema) -> TrackDownloadSchema:
         '''
         Docstring for get_file_by_id
         
@@ -312,7 +324,7 @@ class BackBlazeB2Service:
                 detail=f'An unexpected error has ocurred'
             )
     
-    async def rename_file(self,file_id:str,file_name:str,new_file_name:str) -> TrackUploadedSchema:
+    async def _internal_rename_file(self,file_id:str,file_name:str,new_file_name:str) -> TrackUploadedSchema:
         '''
         Docstring for rename_file
         
@@ -357,7 +369,7 @@ class BackBlazeB2Service:
                 detail=f'An unexpected error has ocurred'
             )
 
-    async def remove_file(self,file_id:str,file_name:str) -> bool:
+    async def _internal_remove_file(self,file_id:str,file_name:str) -> bool:
         '''
         Docstring for remove_file
         
