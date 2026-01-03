@@ -1,7 +1,7 @@
 from typing import Sequence
 from fastapi import APIRouter,HTTPException,status,Depends,Query
 from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,UserSchema
-from services import PlaylistService,get_playlist_service,get_current_user
+from services import PlaylistService,TrackService,get_playlist_service,get_current_user,get_track_service
 from settings import ENVIRONMENT
 
 router = APIRouter(prefix='/playlists',tags=['playlists'])
@@ -89,6 +89,46 @@ async def update(
             detail='An unexpected error has occurred while updating'
         )
     return db_playlist
+
+@router.put(
+    '/{playlist_id}/tracks',
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def add_track(
+    playlist_id:str,
+    track_id:str,
+    service:PlaylistService=Depends(get_playlist_service),
+    track_service:TrackService=Depends(get_track_service),
+    current_user:UserSchema=Depends(get_current_user)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    db_track = await track_service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {playlist_id} was found'
+        )
+    
+    if db_playlist.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f'Only can add tracks to your own playlists'
+        )
+    
+    result = await service.add_track_to_playlist(playlist_id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'An unexpected error has ocurred'
+        )
+    
+    return {'message':'track added'}
 
 @router.delete(
     '/{playlist_id}',

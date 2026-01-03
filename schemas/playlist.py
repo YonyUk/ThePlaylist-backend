@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Optional,Annotated
+from pydantic import BaseModel, field_validator
+from typing import List, Optional,Annotated
 from pydantic.types import StringConstraints
 from settings import ENVIRONMENT
 
@@ -49,6 +49,20 @@ class PlaylistSchema(PlaylistUpdateSchema):
     '''
     id:str
     author_id:str
+    tracks:List[str]
 
+    @field_validator('tracks',mode='before')
+    @classmethod
+    def extract_tracks_ids(cls,l):
+        if not l:
+            return []
+        if isinstance(l,list):
+            if hasattr(l[0],'__table__'):
+                return [str(item.id) for item in l]
+            elif isinstance(l[0],dict):
+                return [item['id'] for item in l]
+        return l
+    
     class Config:
         from_attributes = True
+        exclude = {'track_objects'}

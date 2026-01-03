@@ -1,6 +1,4 @@
 import logging
-import magic
-import filetype
 from hashlib import sha256
 from typing import Sequence
 from pathlib import Path
@@ -19,7 +17,7 @@ router = APIRouter(prefix='/tracks',tags=['tracks'])
     status_code=status.HTTP_201_CREATED,
     response_model=TrackSchema
 )
-@timeout(20)
+@timeout(600)
 async def upload_track(
     track_name:str,
     author_name:str,
@@ -100,7 +98,7 @@ async def get_track(
     response_model=TrackDownloadSchema,
     status_code=status.HTTP_200_OK
 )
-# @timeout(120)
+@timeout(120)
 async def get_track_url(
     track_id:str,
     service:TrackService=Depends(get_track_service),
@@ -137,7 +135,7 @@ async def get_track_url(
     response_model=TrackSchema,
     status_code=status.HTTP_202_ACCEPTED
 )
-# @timeout(120)
+@timeout(120)
 async def update(
     track_id:str,
     update_data:TrackUpdateSchema,
@@ -206,7 +204,7 @@ async def update(
     '/{track_id}',
     status_code=status.HTTP_202_ACCEPTED
 )
-# @timeout(120)
+@timeout(120)
 async def delete(
     track_id:str,
     service:TrackService=Depends(get_track_service),

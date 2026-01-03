@@ -12,5 +12,15 @@ class PlaylistService(Service[
     PlaylistSchema
 ]):
     
-    def __init__(self,repository: PlaylistRepository, exclude_fields:set=set(), exclude_unset: bool = True):
+    def __init__(self,repository: PlaylistRepository,exclude_fields:set=set(), exclude_unset: bool = True):
         super().__init__(Playlist,PlaylistSchema,repository, exclude_fields, exclude_unset)
+    
+    async def add_track_to_playlist(self,playlist_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_track_to_playlist
+        
+        :type playlist_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_track_to_playlist(playlist_id,track_id)
