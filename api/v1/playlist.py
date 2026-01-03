@@ -131,6 +131,46 @@ async def add_track(
     return {'message':'track added'}
 
 @router.delete(
+    '/{playlist_id}/tracks',
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def remove_track(
+    playlist_id:str,
+    track_id:str,
+    service:PlaylistService=Depends(get_playlist_service),
+    track_service:TrackService=Depends(get_track_service),
+    current_user:UserSchema=Depends(get_current_user)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    db_track = await track_service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {playlist_id} was found'
+        )
+    
+    if db_playlist.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f'Only can remove tracks from your own playlists'
+        )
+    
+    result = await service.remove_track_from_playlist(playlist_id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'An unexpected error has ocurred'
+        )
+    
+    return {'message':'track removed'}
+
+@router.delete(
     '/{playlist_id}',
     status_code=status.HTTP_202_ACCEPTED
 )

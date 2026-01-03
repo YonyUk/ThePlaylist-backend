@@ -24,3 +24,13 @@ class PlaylistService(Service[
         :rtype: bool
         '''
         return await self._repository.add_track_to_playlist(playlist_id,track_id)
+    
+    async def remove_track_from_playlist(self,playlist_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_track_from_playlist
+        
+        :type playlist_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_track_from_playlist(playlist_id,track_id)
