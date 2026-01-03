@@ -1,5 +1,7 @@
+from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError,SQLAlchemyError
+from sqlalchemy import select
 from .repository import Repository
 from .track import TrackRepository
 from models import Playlist
@@ -79,3 +81,18 @@ class PlaylistRepository(Repository[Playlist]):
             logger.error(f'An unexpected error has ocurred: {e}')
             await self._db.rollback()
             return False
+        
+    async def get_user_playlists(self,user_id:str,skip:int=0,limit:int=100) -> Sequence[Playlist]:
+        '''
+        Docstring for get_user_playlists
+        
+        :type user_id: str
+        :param skip: number of register to skip
+        :type skip: int
+        :param limit: limit of results by query
+        :type limit: int
+        :rtype: Sequence[Playlist]
+        '''
+        query = select(Playlist).where(Playlist.author_id == user_id).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
