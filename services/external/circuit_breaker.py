@@ -190,7 +190,6 @@ class AsyncCircuitBreaker:
         *args,
         **kwargs
     ) -> Any:
-        breakpoint()
         
         async with self._lock:
             if self._state == CircuitState.OPEN:
