@@ -143,6 +143,26 @@ class Settings:
             'allowed mime types for audio files upload'
         ))
 
+        self._upload_timeout:int = int(os.getenv(
+            'UPLOAD_TIMEOUT',
+            'max time to wait for upload a track'
+        ))
+
+        self._url_download_timeout:int = int(os.getenv(
+            'URL_DOWNLOAD_TIMEOUT',
+            'max time to wait for an url download generation'
+        ))
+
+        self._rename_timeout:int = int(os.getenv(
+            'RENAME_TIMEOUT',
+            'max time to wait for rename a track'
+        ))
+
+        self._delete_track_timeout:int = int(os.getenv(
+            'DELETE_TRACK_TIMEOUT',
+            'max time to wait for delete a track'
+        ))
+
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
         if not value in ['false','true']:
@@ -154,6 +174,22 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def DELETE_TRACK_TIMEOUT(self) -> int:
+        return self._delete_track_timeout
+    
+    @property
+    def RENAME_TIMEOUT(self) -> int:
+        return self._rename_timeout
+    
+    @property
+    def URL_DOWNLOAD_TIMEOUT(self) -> int:
+        return self._url_download_timeout
+    
+    @property
+    def UPLOAD_TIMEOUT(self) -> int:
+        return self._upload_timeout
     
     @property
     def ALLOWED_TRACKS_MIME_TYPES(self) -> List[str]:

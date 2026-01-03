@@ -17,7 +17,7 @@ router = APIRouter(prefix='/tracks',tags=['tracks'])
     status_code=status.HTTP_201_CREATED,
     response_model=TrackSchema
 )
-@timeout(600)
+@timeout(ENVIRONMENT.UPLOAD_TIMEOUT)
 async def upload_track(
     track_name:str,
     author_name:str,
@@ -98,7 +98,7 @@ async def get_track(
     response_model=TrackDownloadSchema,
     status_code=status.HTTP_200_OK
 )
-@timeout(120)
+@timeout(ENVIRONMENT.URL_DOWNLOAD_TIMEOUT)
 async def get_track_url(
     track_id:str,
     service:TrackService=Depends(get_track_service),
@@ -135,7 +135,7 @@ async def get_track_url(
     response_model=TrackSchema,
     status_code=status.HTTP_202_ACCEPTED
 )
-@timeout(120)
+@timeout(ENVIRONMENT.RENAME_TIMEOUT)
 async def update(
     track_id:str,
     update_data:TrackUpdateSchema,
@@ -204,7 +204,7 @@ async def update(
     '/{track_id}',
     status_code=status.HTTP_202_ACCEPTED
 )
-@timeout(120)
+@timeout(ENVIRONMENT.DELETE_TRACK_TIMEOUT)
 async def delete(
     track_id:str,
     service:TrackService=Depends(get_track_service),
