@@ -137,7 +137,7 @@
 
 > ## <h2 style="color:green">**Project configuration**</h2>
 
- - `1`: Create a file named <b style="color:#5595a5">.env</b> with the content **(** an account on **BackBlazeb2** is required **)**:
+ - `1`: Create a file named <b style="color:#5595a5">.env</b> with the content **(** an account on **BackBlazeb2** is required, and you must have postgresql already installed **)**:
 
 ```ini
 # Settings for the app
