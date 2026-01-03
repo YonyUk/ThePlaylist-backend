@@ -1,3 +1,4 @@
+from typing import Sequence
 from repositories import PlaylistRepository
 from models import Playlist
 from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema
@@ -34,3 +35,17 @@ class PlaylistService(Service[
         :rtype: bool
         '''
         return await self._repository.remove_track_from_playlist(playlist_id,track_id)
+    
+    async def get_user_playlists(self,user_id:str,skip:int=0,limit:int=100) -> Sequence[PlaylistSchema]:
+        '''
+        Docstring for get_user_playlists
+        
+        :type user_id: str
+        :param skip: number of registers to skip
+        :type skip: int
+        :param limit: limit of results by query
+        :type limit: int
+        :rtype: Sequence[PlaylistSchema]
+        '''
+        db_result = await self._repository.get_user_playlists(user_id,skip,limit)
+        return [await self._to_schema(result) for result in db_result if result] # type: ignore

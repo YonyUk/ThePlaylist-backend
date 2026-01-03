@@ -1,7 +1,15 @@
 from typing import Sequence
 from fastapi import APIRouter,HTTPException,status,Depends,Query
 from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,UserSchema
-from services import PlaylistService,TrackService,get_playlist_service,get_current_user,get_track_service
+from services import (
+    UserService,
+    PlaylistService,
+    TrackService,
+    get_playlist_service,
+    get_current_user,
+    get_track_service,
+    get_user_service
+)
 from settings import ENVIRONMENT
 
 router = APIRouter(prefix='/playlists',tags=['playlists'])
@@ -38,6 +46,27 @@ async def get_playlists(
         limit,
         page*limit
     )
+
+@router.get(
+    '/search/users/{user_id}',
+    status_code=status.HTTP_200_OK,
+    response_model=Sequence[PlaylistSchema]
+)
+async def get_user_playlists(
+    user_id:str,
+    page:int=Query(0,description='page of results',ge=0),
+    limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
+    service:PlaylistService=Depends(get_playlist_service),
+    user_service:UserService=Depends(get_user_service)
+):
+    db_user = await user_service.get_by_id(user_id)
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No user with id {user_id} was found'
+        )
+    
+    return await service.get_user_playlists(user_id,page*limit,limit)
 
 @router.get(
     '/{playlist_id}',

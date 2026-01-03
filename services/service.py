@@ -146,7 +146,8 @@ class Service(Generic[
                 'id':id
             }
         })
-        return await self._repository.update(id,update_instance)
+        result = await self._repository.update(id,update_instance)
+        return await self._to_schema(result)
     
     async def delete(self,id:str) -> bool:
         '''
