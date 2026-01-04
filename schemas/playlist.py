@@ -41,6 +41,14 @@ class PlaylistUpdateSchema(PlaylistBaseSchema):
     plays:int
     loves:int
 
+class NestedTrackSchema(BaseModel):
+    '''
+    schema for nested 'Track' entity
+    '''
+    id:str
+    name:str
+    author_name:str
+
 class PlaylistSchema(PlaylistUpdateSchema):
     '''
     Docstring for PlaylistSchema
@@ -49,18 +57,42 @@ class PlaylistSchema(PlaylistUpdateSchema):
     '''
     id:str
     author_id:str
-    tracks:List[str]
+    author:str
+    tracks:List[NestedTrackSchema]
+
+    @field_validator('author',mode='before')
+    @classmethod
+    def extract_author_name(cls,author):
+        if not author:
+            return ''
+        if hasattr(author,'__table__'):
+            return author.username
+        if isinstance(author,dict):
+            return author['username']
+        return ''
 
     @field_validator('tracks',mode='before')
     @classmethod
-    def extract_tracks_ids(cls,l):
+    def extract_tracks(cls,l):
         if not l:
             return []
         if isinstance(l,list):
             if hasattr(l[0],'__table__'):
-                return [str(item.id) for item in l]
+                return [
+                    NestedTrackSchema(
+                        id=item.id,
+                        name=item.name,
+                        author_name=item.author_name
+                    ) for item in l
+                ]
             elif isinstance(l[0],dict):
-                return [item['id'] for item in l]
+                return [
+                    NestedTrackSchema(
+                        id=item['id'],
+                        name=item['name'],
+                        author_name=item['author_name']
+                        ) for item in l
+                    ]
         return l
     
     class Config:
