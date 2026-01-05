@@ -118,7 +118,8 @@ async def get_track_url(
             size=cloud_track.size,
             name=db_track.name,
             author_name=db_track.author_name,
-            url=cloud_track.url
+            url=cloud_track.url,
+            expires=cloud_track.expires
         )
     except HTTPException:
         raise

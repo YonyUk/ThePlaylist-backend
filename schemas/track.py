@@ -72,6 +72,7 @@ class TrackDownloadSchema(TrackBaseSchema):
     id:str
     size:int
     url:str
+    expires:int
 
     class Config:
         from_attributes = True

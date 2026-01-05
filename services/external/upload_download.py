@@ -295,7 +295,8 @@ class BackBlazeB2Service:
                 size=track.size,
                 name=file.file_name,
                 author_name=track.author_name,
-                url=f'{url}?Authorization={authorization_token}'
+                url=f'{url}?Authorization={authorization_token}',
+                expires=ENVIRONMENT.BACKBLAZEB2_URL_LIFETIME
             )
         except B2RequestTimeout as e:
             raise HTTPException(
