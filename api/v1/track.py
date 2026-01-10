@@ -3,7 +3,7 @@ from hashlib import sha256
 from typing import Sequence
 from pathlib import Path
 from fastapi import APIRouter,HTTPException,status,Depends,Query,UploadFile,File
-from schemas import TrackDownloadSchema,TrackSchema,TrackUploadSchema,UserSchema,TrackUpdateSchema
+from schemas import TrackDownloadSchema,TrackSchema,TrackUploadSchema,UserSchema,TrackUpdateSchema,TrackPrivateUpdateSchema
 from services import TrackService,get_track_service,get_current_user,BackBlazeB2Service,get_backblazeb2_service
 from settings import ENVIRONMENT
 from tools import timeout
@@ -27,7 +27,6 @@ async def upload_track(
     cloud_service:BackBlazeB2Service=Depends(get_backblazeb2_service)
 ):
     cloud_response = None
-    
     try:
         cloud_response,content_hash = await cloud_service.upload_file(data,track_name)
         track = TrackUploadSchema(
@@ -139,7 +138,7 @@ async def get_track_url(
 @timeout(ENVIRONMENT.RENAME_TIMEOUT)
 async def update(
     track_id:str,
-    update_data:TrackUpdateSchema,
+    update_data:TrackPrivateUpdateSchema,
     service:TrackService=Depends(get_track_service),
     cloud_service:BackBlazeB2Service=Depends(get_backblazeb2_service),
     current_user:UserSchema=Depends(get_current_user),
@@ -161,23 +160,30 @@ async def update(
         )
     
     extension = Path(db_track.name).suffix
+    file_name = Path(db_track.name).name
     cloud_response = None
+
     try:
+        file_id = db_track.file_id
         cloud_response = await cloud_service.rename_file(
             db_track.file_id,
-            db_track.name,
+            file_name,
             f'{update_data.name}{extension}'
         )
 
         update_data.name = f'{update_data.name}{extension}'
 
-        db_track = await service.update(
+        db_track = await service.private_update(
             track_id,
             update_data,
             size=cloud_response.size,
             file_id=cloud_response.id,
             content_hash=db_track.content_hash,
-            uploaded_by=current_user.id
+            uploaded_by=current_user.id,
+            likes=db_track.likes,
+            dislikes=db_track.dislikes,
+            loves=db_track.loves,
+            plays=db_track.plays
         )
         if not db_track:
             raise HTTPException(

@@ -299,16 +299,19 @@ class BackBlazeB2Service:
                 expires=ENVIRONMENT.BACKBLAZEB2_URL_LIFETIME
             )
         except B2RequestTimeout as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_408_REQUEST_TIMEOUT,
                 detail='The download process took too long to complete'
             )
         except B2ConnectionError as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Connection failed'
             )
         except B2Error as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'An unexpected error has ocurred'
@@ -345,16 +348,19 @@ class BackBlazeB2Service:
                 )
             )
         except B2RequestTimeout as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_408_REQUEST_TIMEOUT,
                 detail='The upgrade process took too long to complete'
             )
         except B2ConnectionError as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Connection failed'
             )
         except B2Error as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'An unexpected error has ocurred'
@@ -377,16 +383,19 @@ class BackBlazeB2Service:
             )
             return True
         except B2RequestTimeout as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_408_REQUEST_TIMEOUT,
                 detail='The deleting process took too long to complete'
             )
         except B2ConnectionError as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'Connection failed'
             )
         except B2Error as e:
+            logger.error(e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f'An unexpected error has ocurred'

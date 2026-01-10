@@ -10,6 +10,13 @@ class TrackBaseSchema(BaseModel):
     name:str
     author_name:str
 
+class TrackPrivateUpdateSchema(TrackBaseSchema):
+    '''
+    Docstring for TrackPrivateUpdateSchema
+    
+    private update data schema
+    '''
+
 class TrackUploadSchema(TrackBaseSchema):
     '''
     Docstring for TrackUploadSchema
