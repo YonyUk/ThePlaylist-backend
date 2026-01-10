@@ -129,6 +129,39 @@ async def get_track_url(
             detail=f'An unexpected error has ocurred'
         )
 
+@router.put(
+    '/{track_id}/stats',
+    response_model=TrackSchema,
+    status_code=status.HTTP_202_ACCEPTED
+)
+async def update_stats(
+    track_id:str,
+    update_data:TrackUpdateSchema,
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'no track with id {track_id} was found'
+        )
+    
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.put(
     '/{track_id}',
