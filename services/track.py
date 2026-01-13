@@ -1,6 +1,12 @@
 from repositories import TrackRepository
 from models import Track
-from schemas import TrackUploadSchema,TrackUpdateSchema,TrackSchema,TrackPrivateUpdateSchema
+from schemas import (
+    TrackUploadSchema,
+    TrackUpdateSchema,
+    TrackSchema,
+    TrackPrivateUpdateSchema,
+    ExistencialQuerySchema
+)
 from .service import Service
 
 class TrackService(Service[
@@ -38,3 +44,39 @@ class TrackService(Service[
         })
         result = await self._repository.update(id,update_instance)
         return await self._to_schema(result)
+    
+    async def liked_by(self,user_id:str,track_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for liked_by
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+
+        result = await self._repository.liked_by(user_id,track_id)
+        return ExistencialQuerySchema(result=result)
+
+    async def add_like_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_like_from_user_to_track
+
+        Adds a like from the given user
+
+        :type user_id: str
+        :type track_id: str
+        :rtype: VoidResultOperationSchema
+        '''
+        return await self._repository.add_like_from_user_to_track(user_id,track_id)
+    
+    async def remove_like_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_like_from_user_to_track
+        
+        Removes a like from the given user
+
+        :type user_id: str
+        :type track_id: str
+        :rtype: VoidResultOperationSchema
+        '''
+        return await self._repository.remove_like_from_user_to_track(user_id,track_id)

@@ -20,7 +20,10 @@ def get_user_repository(db:AsyncSession=Depends(get_database_session)):
     finally:
         repository = None
 
-def get_track_repository(db:AsyncSession=Depends(get_database_session)):
+def get_track_repository(
+    db:AsyncSession=Depends(get_database_session),
+    user_repository:UserRepository=Depends(get_user_repository)
+):
     '''
     Docstring for get_track_repository
     
@@ -29,7 +32,7 @@ def get_track_repository(db:AsyncSession=Depends(get_database_session)):
     :return: the 'TrackRepository' dependency
     :rtype: TrackRepository
     '''
-    repository = TrackRepository(db)
+    repository = TrackRepository(db,user_repository)
     try:
         yield repository
     finally:
