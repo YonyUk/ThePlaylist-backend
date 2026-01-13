@@ -40,8 +40,38 @@ class TrackRepository(Repository):
         :rtype: bool
         '''
         query = select(exists().where(
-            (self._likes.columns.track_id == track_id)
-            & (self._likes.columns.user_id == user_id)
+            (self._likes.columns.track_id==track_id)
+            & (self._likes.columns.user_id==user_id)
+        ))
+        result = await self._db.execute(query)
+        return result.scalar() == True
+
+    async def disliked_by(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for disliked_by
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        query = select(exists().where(
+            (self._dislikes.columns.track_id==track_id)
+            & (self._dislikes.columns.user_id==user_id)
+        ))
+        result = await self._db.execute(query)
+        return result.scalar() == True
+    
+    async def loved_by(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for loved_by
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        query = select(exists().where(
+            (self._loves.columns.track_id==track_id)
+            & (self._loves.columns.user_id==user_id)
         ))
         result = await self._db.execute(query)
         return result.scalar() == True
@@ -115,5 +145,149 @@ class TrackRepository(Repository):
             return False
         except Exception as e:
             logger.error(f'An unexpected error has ocurred while deleting like: {e}')
+            await self._db.rollback()
+            return False
+    
+    async def add_dislike_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_dislike_from_user_to_track
+
+        Adds a dislike from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+
+        query = select(Track).where(Track.id==track_id).options(selectinload(Track.users_dislikes))
+        result = await self._db.execute(query)
+        db_track = result.scalar_one_or_none()
+        if not db_track:
+            return False
+        db_user = await self._user_repository.get_by_id(user_id)
+        if not db_user:
+            return False
+        try:
+            db_track.users_dislikes.append(db_user)
+            await self._db.commit()
+            await self._db.refresh(db_track)
+            return True
+        except IntegrityError as e:
+            logger.error(f'IntegrityError while adding dislike: {e}')
+            await self._db.rollback()
+            return False
+        except SQLAlchemyError as e:
+            logger.error(f'Database error while adding dislike: {e}')
+            await self._db.rollback()
+            return False
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred while adding dislike: {e}')
+            await self._db.rollback()
+            return False
+    
+    async def remove_dislike_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_dislike_from_user_to_track
+
+        Remove a dislike from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+
+        query = select(Track).where(Track.id==track_id).options(selectinload(Track.users_dislikes))
+        result = await self._db.execute(query)
+        db_track = result.scalar_one_or_none()
+        if not db_track:
+            return False
+        db_user = await self._user_repository.get_by_id(user_id)
+        if not db_user:
+            return False
+        try:
+            db_track.users_dislikes.remove(db_user)
+            await self._db.commit()
+            await self._db.refresh(db_track)
+            return True
+        except IntegrityError as e:
+            logger.error(f'IntegrityError while deleting dislike: {e}')
+            await self._db.rollback()
+            return False
+        except SQLAlchemyError as e:
+            logger.error(f'Database error while deleting dislike: {e}')
+            await self._db.rollback()
+            return False
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred while deleting dislike: {e}')
+            await self._db.rollback()
+            return False
+        
+    async def add_love_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_love_from_user_to_track
+
+        Adds a love from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        query = select(Track).where(Track.id==track_id).options(selectinload(Track.users_loves))
+        result = await self._db.execute(query)
+        db_track = result.scalar_one_or_none()
+        if not db_track:
+            return False
+        db_user = await self._user_repository.get_by_id(user_id)
+        if not db_user:
+            return False
+        try:
+            db_track.users_loves.append(db_user)
+            await self._db.commit()
+            await self._db.refresh(db_track)
+            return True
+        except IntegrityError as e:
+            logger.error(f'IntegrityError while adding love: {e}')
+            await self._db.rollback()
+            return False
+        except SQLAlchemyError as e:
+            logger.error(f'Database error while adding love: {e}')
+            await self._db.rollback()
+            return False
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred while adding love: {e}')
+            await self._db.rollback()
+            return False
+        
+    async def remove_love_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_love_from_user_to_track
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        query = select(Track).where(Track.id==track_id).options(selectinload(Track.users_loves))
+        result = await self._db.execute(query)
+        db_track = result.scalar_one_or_none()
+        if not db_track:
+            return False
+        db_user = await self._user_repository.get_by_id(user_id)
+        if not db_user:
+            return False
+        try:
+            db_track.users_loves.remove(db_user)
+            await self._db.commit()
+            await self._db.refresh(db_track)
+            return True
+        except IntegrityError as e:
+            logger.error(f'IntegrityError while deleting love: {e}')
+            await self._db.rollback()
+            return False
+        except SQLAlchemyError as e:
+            logger.error(f'Database error while deleting love: {e}')
+            await self._db.rollback()
+            return False
+        except Exception as e:
+            logger.error(f'An unexpected error has ocurred while deleting love: {e}')
             await self._db.rollback()
             return False

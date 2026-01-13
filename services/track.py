@@ -56,6 +56,28 @@ class TrackService(Service[
 
         result = await self._repository.liked_by(user_id,track_id)
         return ExistencialQuerySchema(result=result)
+    
+    async def disliked_by(self,user_id:str,track_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for disliked_by
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: ExistencialQuerySchema
+        '''
+        result = await self._repository.disliked_by(user_id,track_id)
+        return ExistencialQuerySchema(result=result)
+    
+    async def loved_by(self,user_id:str,track_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for loved_by
+        
+        :type user_id: str
+        :type track_id: str
+        :rtype: ExistencialQuerySchema
+        '''
+        result = await self._repository.loved_by(user_id,track_id)
+        return ExistencialQuerySchema(result=result)
 
     async def add_like_from_user_to_track(self,user_id:str,track_id:str) -> bool:
         '''
@@ -80,3 +102,51 @@ class TrackService(Service[
         :rtype: VoidResultOperationSchema
         '''
         return await self._repository.remove_like_from_user_to_track(user_id,track_id)
+    
+    async def add_dislike_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_dislike_from_user_to_track
+
+        Adds a dislike from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_dislike_from_user_to_track(user_id,track_id)
+    
+    async def remove_dislike_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_dislike_from_user_to_track
+
+        Remove a dislike from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_dislike_from_user_to_track(user_id,track_id)
+    
+    async def add_love_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for add_love_from_user_to_track
+
+        Adds a love from the given user
+                
+        :type user_id: str
+        :type track_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_love_from_user_to_track(user_id,track_id)
+    
+    async def remove_love_from_user_to_track(self,user_id:str,track_id:str) -> bool:
+        '''
+        Docstring for remove_love_from_user_to_track
+
+        Remove a love from the given user
+                
+        :type user_id: str
+        :type track_str: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_love_from_user_to_track(user_id,track_id)

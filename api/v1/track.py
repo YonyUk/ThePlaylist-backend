@@ -208,6 +208,140 @@ async def remove_like_from_user_to_track(
         )
     return VoidResultOperationSchema(success=result,message='operation success')
 
+@router.get(
+    '/{track_id}/stats/dislikes',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def disliked_by(
+    track_id:str,
+    user_id:str=Query(description='user id'),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    return await service.disliked_by(user_id,track_id)
+
+@router.put(
+    '/{track_id}/stats/dislikes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=VoidResultOperationSchema
+)
+async def add_dislike_from_user_to_track(
+    track_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    result = await service.add_dislike_from_user_to_track(user.id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    return VoidResultOperationSchema(success=result,message='operation success')
+
+@router.delete(
+    '/{track_id}/stats/dislikes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=VoidResultOperationSchema
+)
+async def remove_dislike_from_user_to_track(
+    track_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    
+    result = await service.remove_dislike_from_user_to_track(user.id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    return VoidResultOperationSchema(success=result,message='operation success')
+
+@router.get(
+    '/{track_id}/stats/loves',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def loved_by(
+    track_id:str,
+    user_id:str=Query(description='user id'),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    return await service.loved_by(user_id,track_id)
+
+@router.put(
+    '/{track_id}/stats/loves',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=VoidResultOperationSchema
+)
+async def add_love_from_user_to_track(
+    track_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    result = await service.add_love_from_user_to_track(user.id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    return VoidResultOperationSchema(success=result,message='operation success')
+
+@router.delete(
+    '/{track_id}/stats/loves',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=VoidResultOperationSchema
+)
+async def remove_love_from_user_to_track(
+    track_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:TrackService=Depends(get_track_service)
+):
+    db_track = await service.get_by_id(track_id)
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No track with id {track_id} was found'
+        )
+    result = await service.remove_love_from_user_to_track(user.id,track_id)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    return VoidResultOperationSchema(success=result,message='operation success')
+
 @router.put(
     '/{track_id}/stats',
     response_model=TrackSchema,
