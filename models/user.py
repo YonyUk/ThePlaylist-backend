@@ -17,3 +17,21 @@ class User(BaseModel):
     hashed_password:Mapped[String] = mapped_column(String,nullable=False)
 
     playlists = relationship('Playlist',back_populates='author',cascade='all, delete-orphan')
+    
+    tracks_likes = relationship(
+        'Track',
+        back_populates='users_likes',
+        secondary='tracks_likes'
+    )
+
+    tracks_dislikes = relationship(
+        'Track',
+        back_populates='users_dislikes',
+        secondary='tracks_dislikes'
+    )
+
+    tracks_loves = relationship(
+        'Track',
+        back_populates='users_loves',
+        secondary='tracks_loves'
+    )

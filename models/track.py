@@ -9,6 +9,27 @@ playlists_tracks = Table(
     Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True,index=True)
 )
 
+tracks_likes = Table(
+    'tracks_likes',
+    BaseModel.metadata,
+    Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
+
+tracks_dislikes = Table(
+    'tracks_dislikes',
+    BaseModel.metadata,
+    Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
+
+tracks_loves = Table(
+    'tracks_loves',
+    BaseModel.metadata,
+    Column('track_id',String,ForeignKey('tracks.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
+
 class Track(BaseModel):
     '''
     Docstring for Track
@@ -35,4 +56,22 @@ class Track(BaseModel):
         back_populates='tracks',
         lazy='selectin',
         secondary=playlists_tracks
+    )
+
+    users_likes = relationship(
+        'User',
+        back_populates='tracks_likes',
+        secondary=tracks_likes
+    )
+
+    users_dislikes = relationship(
+        'User',
+        back_populates='tracks_dislikes',
+        secondary=tracks_dislikes
+    )
+
+    users_loves = relationship(
+        'User',
+        back_populates='tracks_loves',
+        secondary=tracks_loves
     )
