@@ -143,9 +143,9 @@ async def get_track_url(
     status_code=status.HTTP_200_OK,
     response_model=ExistencialQuerySchema
 )
-async def liked_by(
+async def liked(
     track_id:str,
-    user_id:str=Query(description='user id'),
+    user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
 ):
     db_track = await service.get_by_id(track_id)
@@ -155,14 +155,14 @@ async def liked_by(
             detail=f'No track with id {track_id} was found'
         )
     
-    return await service.liked_by(user_id,track_id)
+    return await service.liked_by(user.id,track_id)
 
 @router.put(
     '/{track_id}/stats/likes',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
-async def add_like_from_user_to_track(
+async def add_like_to_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -180,15 +180,37 @@ async def add_like_from_user_to_track(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='operation failed'
         )
+    
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes + 1,
+        dislikes=db_track.dislikes,
+        loves=db_track.loves,
+        plays=db_track.plays
+    )
 
-    return VoidResultOperationSchema(success=result,message='operation success')
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.delete(
     '/{track_id}/stats/likes',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
-async def remove_like_from_user_to_track(
+async def remove_like_from_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -206,16 +228,39 @@ async def remove_like_from_user_to_track(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=result
         )
-    return VoidResultOperationSchema(success=result,message='operation success')
+    
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes - 1,
+        dislikes=db_track.dislikes,
+        loves=db_track.loves,
+        plays=db_track.plays
+    )
+
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.get(
     '/{track_id}/stats/dislikes',
     status_code=status.HTTP_200_OK,
     response_model=ExistencialQuerySchema
 )
-async def disliked_by(
+async def disliked(
     track_id:str,
-    user_id:str=Query(description='user id'),
+    user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
 ):
     db_track = service.get_by_id(track_id)
@@ -224,14 +269,14 @@ async def disliked_by(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No track with id {track_id} was found'
         )
-    return await service.disliked_by(user_id,track_id)
+    return await service.disliked_by(user.id,track_id)
 
 @router.put(
     '/{track_id}/stats/dislikes',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
-async def add_dislike_from_user_to_track(
+async def add_dislike_to_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -248,14 +293,37 @@ async def add_dislike_from_user_to_track(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='operation failed'
         )
-    return VoidResultOperationSchema(success=result,message='operation success')
+    
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes,
+        dislikes=db_track.dislikes + 1,
+        loves=db_track.loves,
+        plays=db_track.plays
+    )
+
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.delete(
     '/{track_id}/stats/dislikes',
     status_code=status.HTTP_202_ACCEPTED,
     response_model=VoidResultOperationSchema
 )
-async def remove_dislike_from_user_to_track(
+async def remove_dislike_from_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -274,16 +342,38 @@ async def remove_dislike_from_user_to_track(
             detail='operation failed'
         )
     
-    return VoidResultOperationSchema(success=result,message='operation success')
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes,
+        dislikes=db_track.dislikes - 1,
+        loves=db_track.loves,
+        plays=db_track.plays
+    )
+
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.get(
     '/{track_id}/stats/loves',
     status_code=status.HTTP_200_OK,
     response_model=ExistencialQuerySchema
 )
-async def loved_by(
+async def loved(
     track_id:str,
-    user_id:str=Query(description='user id'),
+    user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
 ):
     db_track = await service.get_by_id(track_id)
@@ -292,14 +382,14 @@ async def loved_by(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No track with id {track_id} was found'
         )
-    return await service.loved_by(user_id,track_id)
+    return await service.loved_by(user.id,track_id)
 
 @router.put(
     '/{track_id}/stats/loves',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
-async def add_love_from_user_to_track(
+async def add_love_to_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -316,14 +406,37 @@ async def add_love_from_user_to_track(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='operation failed'
         )
-    return VoidResultOperationSchema(success=result,message='operation success')
+    
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes,
+        dislikes=db_track.dislikes,
+        loves=db_track.loves + 1,
+        plays=db_track.plays
+    )
+
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.delete(
     '/{track_id}/stats/loves',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
-async def remove_love_from_user_to_track(
+async def remove_love_from_track(
     track_id:str,
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
@@ -340,16 +453,38 @@ async def remove_love_from_user_to_track(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail='operation failed'
         )
-    return VoidResultOperationSchema(success=result,message='operation success')
+    
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes + 1,
+        dislikes=db_track.dislikes,
+        loves=db_track.loves,
+        plays=db_track.plays
+    )
+
+    db_track = await service.update(
+        track_id,
+        update_data,
+        name=db_track.name,
+        author_name=db_track.author_name,
+        size=db_track.size,
+        file_id=db_track.file_id,
+        content_hash=db_track.content_hash,
+        uploaded_by=db_track.uploaded_by
+    )
+    if not db_track:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update track info'
+        )
+    return db_track
 
 @router.put(
-    '/{track_id}/stats',
+    '/{track_id}/stats/plays',
     response_model=TrackSchema,
     status_code=status.HTTP_202_ACCEPTED
 )
-async def update_stats(
+async def add_play(
     track_id:str,
-    update_data:TrackUpdateSchema,
     service:TrackService=Depends(get_track_service)
 ):
     db_track = await service.get_by_id(track_id)
@@ -359,6 +494,13 @@ async def update_stats(
             detail=f'no track with id {track_id} was found'
         )
     
+    update_data:TrackUpdateSchema = TrackUpdateSchema(
+        likes=db_track.likes,
+        dislikes=db_track.dislikes,
+        loves=db_track.loves,
+        plays=db_track.plays + 1
+    )
+
     db_track = await service.update(
         track_id,
         update_data,
