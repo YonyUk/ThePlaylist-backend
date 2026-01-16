@@ -262,7 +262,7 @@ async def disliked(
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
 ):
-    db_track = service.get_by_id(track_id)
+    db_track = await service.get_by_id(track_id)
     if not db_track:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
