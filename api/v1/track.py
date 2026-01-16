@@ -10,8 +10,7 @@ from schemas import (
     UserSchema,
     TrackUpdateSchema,
     TrackPrivateUpdateSchema,
-    ExistencialQuerySchema,
-    VoidResultOperationSchema
+    ExistencialQuerySchema
 )
 from services import TrackService,get_track_service,get_current_user,BackBlazeB2Service,get_backblazeb2_service
 from settings import ENVIRONMENT
@@ -321,7 +320,7 @@ async def add_dislike_to_track(
 @router.delete(
     '/{track_id}/stats/dislikes',
     status_code=status.HTTP_202_ACCEPTED,
-    response_model=VoidResultOperationSchema
+    response_model=TrackSchema
 )
 async def remove_dislike_from_track(
     track_id:str,

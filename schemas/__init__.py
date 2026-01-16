@@ -13,12 +13,3 @@ class ExistencialQuerySchema(BaseModel):
     '''
 
     result:bool
-
-class VoidResultOperationSchema(BaseModel):
-    '''
-    Docstring for VoidResultQuerySchema
-    
-    schema for a void-result operation
-    '''
-    success:bool
-    message:str
