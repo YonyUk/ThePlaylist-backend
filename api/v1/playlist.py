@@ -85,6 +85,19 @@ async def get_user_playlists(
     return await service.get_user_playlists(user_id,page*limit,limit)
 
 @router.get(
+    '/me',
+    status_code=status.HTTP_200_OK,
+    response_model=Sequence[PlaylistSchema]
+)
+async def get_my_playlists(
+    page:int=Query(0,description='page of results',ge=0),
+    limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    return await service.get_user_playlists(user.id,page*limit,limit)
+
+@router.get(
     '/{playlist_id}',
     status_code=status.HTTP_200_OK,
     response_model=PlaylistSchema

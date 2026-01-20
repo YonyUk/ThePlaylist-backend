@@ -1,10 +1,11 @@
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError,SQLAlchemyError
-from sqlalchemy import select,exists
+from sqlalchemy import select,exists,func
 from .repository import Repository
 from .track import TrackRepository
-from models import Playlist
+from models import Playlist,Track
+from models.track import playlists_tracks as tracks
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,6 +15,7 @@ class PlaylistRepository(Repository[Playlist]):
     def __init__(self,db: AsyncSession,track_repository:TrackRepository):
         super().__init__(Playlist, db)
         self._track_repository = track_repository
+        self._tracks = tracks
     
     async def _try_get_instance(self, instance: Playlist) -> Playlist | None:
         return await self.get_by_id(str(instance.id))
@@ -108,3 +110,22 @@ class PlaylistRepository(Repository[Playlist]):
         query = select(exists().where((Playlist.author_id==user_id) & (Playlist.name==playlist_name)))
         result = await self._db.execute(query)
         return result.scalar() == True
+    
+    async def get_instances(self, limit: int = 100, skip: int = 0) -> Sequence[Playlist]:
+        '''
+        Docstring for get_instances
+        
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Playlist]
+        '''
+        subquery = (
+            select(1).where(
+                (self._tracks.columns.playlist_id==Playlist.id) &
+                (self._tracks.columns.track_id==Track.id)
+            )
+            .correlate(Playlist)
+        )
+        query = select(Playlist).where(exists(subquery))
+        result = await self._db.execute(query)
+        return result.scalars().all()
