@@ -291,3 +291,17 @@ class TrackRepository(Repository):
             logger.error(f'An unexpected error has ocurred while deleting love: {e}')
             await self._db.rollback()
             return False
+
+    async def get_tracks_uploaded_by(self,user_id:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_uploaded_by
+        
+        :type user_id: str
+        :type limit: int
+        :param skip: limit of results per query
+        :type skip: number of register to jump
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(Track.uploaded_by==user_id).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()

@@ -1,3 +1,4 @@
+from typing import Sequence
 from repositories import TrackRepository
 from models import Track
 from schemas import (
@@ -150,3 +151,16 @@ class TrackService(Service[
         :rtype: bool
         '''
         return await self._repository.remove_love_from_user_to_track(user_id,track_id)
+    
+    async def get_tracks_uploaded_by(self,user_id:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_uploaded_by
+        
+        :type user_id: str
+        :type limit: int
+        :param skip: limit of results per query
+        :type skip: number of register to jump
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_uploaded_by(user_id,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore

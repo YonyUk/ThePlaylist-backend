@@ -84,6 +84,19 @@ async def get_tracks(
     )
 
 @router.get(
+    '/mytracks',
+    status_code=status.HTTP_200_OK,
+    response_model=Sequence[TrackSchema]
+)
+async def get_my_tracks(
+    page:int=Query(0,description='page of results',ge=0),
+    limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
+    user:UserSchema=Depends(get_current_user),
+    service:TrackService=Depends(get_track_service)
+):
+    return await service.get_tracks_uploaded_by(user.id,limit,page*limit)
+
+@router.get(
     '/{track_id}',
     response_model=TrackSchema,
     status_code=status.HTTP_200_OK
