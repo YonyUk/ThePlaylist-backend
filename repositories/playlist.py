@@ -1,7 +1,7 @@
 from typing import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError,SQLAlchemyError
-from sqlalchemy import select
+from sqlalchemy import select,exists
 from .repository import Repository
 from .track import TrackRepository
 from models import Playlist
@@ -96,3 +96,15 @@ class PlaylistRepository(Repository[Playlist]):
         query = select(Playlist).where(Playlist.author_id == user_id).offset(skip).limit(limit)
         result = await self._db.execute(query)
         return result.scalars().all()
+    
+    async def exists_playlist_with_name_from_user(self,user_id:str,playlist_name:str) -> bool:
+        '''
+        Docstring for exists_playlist_with_name_from_user
+        
+        :type user_id: str
+        :type playlist_name: str
+        :rtype: bool
+        '''
+        query = select(exists().where((Playlist.author_id==user_id) & (Playlist.name==playlist_name)))
+        result = await self._db.execute(query)
+        return result.scalar() == True

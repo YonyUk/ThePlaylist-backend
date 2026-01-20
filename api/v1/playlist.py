@@ -1,6 +1,6 @@
 from typing import Sequence
 from fastapi import APIRouter,HTTPException,status,Depends,Query
-from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,UserSchema
+from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,UserSchema,ExistencialQuerySchema
 from services import (
     UserService,
     PlaylistService,
@@ -46,6 +46,22 @@ async def get_playlists(
         limit,
         page*limit
     )
+
+@router.get(
+    '/search/{playlist_name}',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def exists_playlist_with_name_from_user(
+    playlist_name:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    exists = await service.exists_playlist_with_name_from_user(user.id,playlist_name)
+    return ExistencialQuerySchema(
+        result=exists
+    )
+    
 
 @router.get(
     '/search/users/{user_id}',

@@ -49,3 +49,13 @@ class PlaylistService(Service[
         '''
         db_result = await self._repository.get_user_playlists(user_id,skip,limit)
         return [await self._to_schema(result) for result in db_result if result] # type: ignore
+    
+    async def exists_playlist_with_name_from_user(self,user_id:str,playlist_name:str) -> bool:
+        '''
+        Docstring for exists_playlist_with_name_from_user
+        
+        :type user_id: str
+        :type playlist_name: str
+        :rtype bool
+        '''
+        return await self._repository.exists_playlist_with_name_from_user(user_id,playlist_name)
