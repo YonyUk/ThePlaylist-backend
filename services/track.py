@@ -164,3 +164,43 @@ class TrackService(Service[
         '''
         tracks = await self._repository.get_tracks_uploaded_by(user_id,limit,skip)
         return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def get_tracks_with_name_like(self,text:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_with_name_like
+        
+        :type text: str
+        :param limit: limit of results per query
+        :type limit: int
+        :param skip: number of registers to jump
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_with_name_like(text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def get_tracks_from_user_with_name_like(
+        self,
+        user_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_from_user_with_name_like
+        
+        :type user_id: str
+        :type text: str
+        :param limit: limit of results per query
+        :type limit: int
+        :param skip: number of registers to jump
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_from_user_with_name_like(
+            user_id,
+            text,
+            limit,
+            skip
+        )
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore

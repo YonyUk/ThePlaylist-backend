@@ -305,3 +305,43 @@ class TrackRepository(Repository):
         query = select(Track).where(Track.uploaded_by==user_id).offset(skip).limit(limit)
         result = await self._db.execute(query)
         return result.scalars().all()
+
+    async def get_tracks_with_name_like(self,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_with_name_like
+        
+        :type text: str
+        :param limit: limit of results per query
+        :type limit: int
+        :param skip: number of registers to jump
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(Track.name.like(f'%{text}%')).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def get_tracks_from_user_with_name_like(
+        self,
+        user_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_from_user_with_name_like
+        
+        :type user_id: str
+        :type text: str
+        :param limit: limit of results per query
+        :type limit: int
+        :param skip: number of registers to jump
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(
+            (Track.name.like(f'%{text}%')) &
+            (Track.uploaded_by==user_id)
+        ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()

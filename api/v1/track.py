@@ -89,11 +89,14 @@ async def get_tracks(
     response_model=Sequence[TrackSchema]
 )
 async def get_my_tracks(
+    text:str=Query('',description='text to search in names'),
     page:int=Query(0,description='page of results',ge=0),
     limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
     user:UserSchema=Depends(get_current_user),
     service:TrackService=Depends(get_track_service)
 ):
+    if len(text) > 0:
+        return await service.get_tracks_from_user_with_name_like(user.id,text,limit,page*limit)
     return await service.get_tracks_uploaded_by(user.id,limit,page*limit)
 
 @router.get(
