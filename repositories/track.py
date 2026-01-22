@@ -348,13 +348,15 @@ class TrackRepository(Repository):
         result = await self._db.execute(query)
         return result.scalars().all()
     
-    async def get_tracks_on_playlist(self,playlist_id:str) -> Sequence[Track]:
+    async def get_tracks_on_playlist(self,playlist_id:str,limit:int=100,skip:int=0) -> Sequence[Track]:
         '''
         Docstring for get_tracks_on_playlist
         
         :type playlist_id: str
         :rtype: Sequence[Track]
         '''
-        query = select(Track).join(Track.playlists).where(Playlist.id==playlist_id)
+        query = select(Track).join(Track.playlists).where(
+            Playlist.id==playlist_id
+        ).offset(skip).limit(limit)
         result = await self._db.execute(query)
         return result.scalars().all()

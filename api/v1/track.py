@@ -101,7 +101,7 @@ async def get_tracks(
             detail=f'No playlist with id {playlist_id} was found'
         )
     
-    return await service.get_tracks_on_playlist(playlist_id)
+    return await service.get_tracks_on_playlist(playlist_id,limit,page*limit)
 
 @router.get(
     '/mytracks',
