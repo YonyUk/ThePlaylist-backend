@@ -490,9 +490,9 @@ async def remove_love_from_track(
         )
     
     update_data:TrackUpdateSchema = TrackUpdateSchema(
-        likes=db_track.likes + 1,
+        likes=db_track.likes,
         dislikes=db_track.dislikes,
-        loves=db_track.loves,
+        loves=db_track.loves - 1,
         plays=db_track.plays
     )
 

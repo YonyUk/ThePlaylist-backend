@@ -170,7 +170,7 @@ async def add_track(
     if not db_track:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'No track with id {playlist_id} was found'
+            detail=f'No track with id {track_id} was found'
         )
     
     if db_playlist.author_id != current_user.id:
@@ -210,7 +210,7 @@ async def remove_track(
     if not db_track:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f'No track with id {playlist_id} was found'
+            detail=f'No track with id {track_id} was found'
         )
     
     if db_playlist.author_id != current_user.id:
