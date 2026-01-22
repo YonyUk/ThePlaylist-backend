@@ -204,3 +204,13 @@ class TrackService(Service[
             skip
         )
         return [await self._to_schema(track) for track in tracks if track] # type: ignore
+
+    async def get_tracks_on_playlist(self,playlist_id:str) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_on_playlist
+        
+        :type playlist_id: str
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_on_playlist(playlist_id)
+        return [await self._to_schema(track) for track in tracks if track]  # type: ignore

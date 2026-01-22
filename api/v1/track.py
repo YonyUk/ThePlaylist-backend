@@ -12,7 +12,15 @@ from schemas import (
     TrackPrivateUpdateSchema,
     ExistencialQuerySchema
 )
-from services import TrackService,get_track_service,get_current_user,BackBlazeB2Service,get_backblazeb2_service
+from services import (
+    TrackService,
+    get_track_service,
+    get_current_user,
+    BackBlazeB2Service,
+    get_backblazeb2_service,
+    PlaylistService,
+    get_playlist_service
+)
 from settings import ENVIRONMENT
 from tools import timeout
 
@@ -74,14 +82,26 @@ async def upload_track(
     response_model=Sequence[TrackSchema]
 )
 async def get_tracks(
+    playlist_id:str=Query('',description='playlist from where tracks will retrieved'),
     page:int=Query(0,description='page of results',ge=0),
     limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
-    service:TrackService=Depends(get_track_service)
+    service:TrackService=Depends(get_track_service),
+    playlist_service:PlaylistService=Depends(get_playlist_service)
 ):
-    return await service.get(
-        limit,
-        page*limit
-    )
+    if len(playlist_id) == 0:
+        return await service.get(
+            limit,
+            page*limit
+        )
+    
+    db_playlist = await playlist_service.get_by_id(playlist_id)
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    return await service.get_tracks_on_playlist(playlist_id)
 
 @router.get(
     '/mytracks',

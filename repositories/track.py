@@ -5,11 +5,12 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError,SQLAlchemyError
 from .repository import Repository
 from .user import UserRepository
-from models import Track
+from models import Track,Playlist
 from models.track import (
     tracks_likes as likes,
     tracks_dislikes as dislikes,
-    tracks_loves as loves
+    tracks_loves as loves,
+    playlists_tracks
 )
 import logging
 
@@ -23,6 +24,7 @@ class TrackRepository(Repository):
         self._likes = likes
         self._dislikes = dislikes
         self._loves = loves
+        self._playlists_tracks = playlists_tracks
     
     async def _try_get_instance(self, instance: Track) -> Track | None:
         db_instance = await self.get_by_id(str(instance.id))
@@ -343,5 +345,16 @@ class TrackRepository(Repository):
             (Track.name.like(f'%{text}%')) &
             (Track.uploaded_by==user_id)
         ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def get_tracks_on_playlist(self,playlist_id:str) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_on_playlist
+        
+        :type playlist_id: str
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).join(Track.playlists).where(Playlist.id==playlist_id)
         result = await self._db.execute(query)
         return result.scalars().all()
