@@ -9,9 +9,9 @@ from repositories import (
 )
 from .user import UserService
 from .auth import AuthService,_oauth2_schema
-from .playlist import PlaylistService
+from .playlist import PlaylistService,PlaylistSearchMode
 from .external import BackBlazeB2Service,get_backblazeb2_service
-from .track import TrackService
+from .track import TrackService,TrackSearchMode
 from fastapi.security import HTTPAuthorizationCredentials,HTTPBearer
 
 _http_security = HTTPBearer(auto_error=False)

@@ -19,11 +19,11 @@ from services import (
     BackBlazeB2Service,
     get_backblazeb2_service,
     PlaylistService,
-    get_playlist_service
+    get_playlist_service,
+    TrackSearchMode
 )
 from settings import ENVIRONMENT
 from tools import timeout
-from services.track import SearchMode
 
 
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ async def upload_track(
 async def get_tracks(
     playlist_id:str=Query('',description='playlist from where tracks will retrieved'),
     pattern:str=Query('',description='text to search in tracks'),
-    search_mode:SearchMode=Query(SearchMode.BOTH,description='where the pattern will be searched'),
+    search_mode:TrackSearchMode=Query(TrackSearchMode.BOTH,description='where the pattern will be searched'),
     page:int=Query(0,description='page of results',ge=0),
     limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
     service:TrackService=Depends(get_track_service),

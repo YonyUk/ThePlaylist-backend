@@ -5,6 +5,7 @@ from services import (
     UserService,
     PlaylistService,
     TrackService,
+    PlaylistSearchMode,
     get_playlist_service,
     get_current_user,
     get_track_service,
@@ -40,8 +41,13 @@ async def create(
 async def get_playlists(
     page:int=Query(0,description='page of results',ge=0),
     limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
+    pattern:str=Query('',description='pattern to search'),
+    search_mode:PlaylistSearchMode=Query(PlaylistSearchMode.BOTH,description='mode to search playlists'),
     service:PlaylistService=Depends(get_playlist_service)
 ):
+    if len(pattern) != 0:
+        return service.search_playlists(pattern,limit,page*limit,search_mode)
+    
     return await service.get(
         limit,
         page*limit

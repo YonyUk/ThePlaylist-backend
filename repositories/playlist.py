@@ -4,7 +4,7 @@ from sqlalchemy.exc import IntegrityError,SQLAlchemyError
 from sqlalchemy import select,exists,func
 from .repository import Repository
 from .track import TrackRepository
-from models import Playlist,Track
+from models import Playlist,Track,User
 from models.track import playlists_tracks as tracks
 import logging
 
@@ -127,5 +127,71 @@ class PlaylistRepository(Repository[Playlist]):
             .correlate(Playlist)
         )
         query = select(Playlist).where(exists(subquery)).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def search_playlists_by_name(self,text:str,limit:int=100,skip:int=0) -> Sequence[Playlist]:
+        '''
+        Docstring for search_playlist_by_name
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Playlist]
+        '''
+        subquery = (
+            select(1).where(
+                (self._tracks.columns.playlist_id==Playlist.id) &
+                (self._tracks.columns.track_id==Track.id)
+            )
+            .correlate(Playlist)
+        )
+        query = select(Playlist).where(exists(subquery)).where(Playlist.name.like(f'%{text}%')).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def search_playlists_by_author_name(self,text:str,limit:int=100,skip:int=0) -> Sequence[Playlist]:
+        '''
+        Docstring for search_playlist_by_author_name
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Playlist]
+        '''
+        subquery = (
+            select(1).where(
+                (self._tracks.columns.playlist_id==Playlist.id) &
+                (self._tracks.columns.track_id==Track.id)
+            )
+            .correlate(Playlist)
+        )
+        query = select(Playlist).where(exists(subquery)).join(Playlist.author).where(
+            User.username.like(f'%{text}%')
+        ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def search_playlists_by_text(self,text:str,limit:int=100,skip:int=0) -> Sequence[Playlist]:
+        '''
+        Docstring for search_playlist_by_text
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Playlist]
+        '''
+        subquery = (
+            select(1).where(
+                (self._tracks.columns.playlist_id==Playlist.id) &
+                (self._tracks.columns.track_id==Track.id)
+            )
+            .correlate(Playlist)
+        )
+        query = select(Playlist).where(exists(subquery)).where(Playlist.name.like(f'%{text}%')).union(
+            select(Playlist).where(exists(subquery)).join(Playlist.author).where(
+                User.username.like(f'%{text}%')
+            )
+        ).offset(skip).limit(limit)
         result = await self._db.execute(query)
         return result.scalars().all()

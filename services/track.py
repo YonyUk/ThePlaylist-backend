@@ -12,7 +12,7 @@ from .service import Service
 
 from enum import StrEnum
 
-class SearchMode(StrEnum):
+class TrackSearchMode(StrEnum):
     BY_NAME = 'by name'
     BY_AUTHOR = 'by author'
     BOTH = 'both'
@@ -320,22 +320,22 @@ class TrackService(Service[
         tracks = await self._repository.search_tracks_by_text(text,limit,skip)
         return [await self._to_schema(track) for track in tracks if track] # type: ignore
     
-    async def search_tracks(self,text:str,limit:int=100,skip:int=0,search_mode:SearchMode=SearchMode.BOTH) -> Sequence[TrackSchema]:
+    async def search_tracks(self,text:str,limit:int=100,skip:int=0,search_mode:TrackSearchMode=TrackSearchMode.BOTH) -> Sequence[TrackSchema]:
         '''
         Docstring for search_tracks
         
         :type text: str
         :type limit: int
         :type skip: int
-        :type search_mode: SearchMode
+        :type search_mode: TrackSearchMode
         :rtype: Sequence[TrackSchema]
         '''
         match search_mode:
-            case SearchMode.BY_NAME:
+            case TrackSearchMode.BY_NAME:
                 return await self.get_tracks_with_name_like(text,limit,skip)
-            case SearchMode.BY_AUTHOR:
+            case TrackSearchMode.BY_AUTHOR:
                 return await self.get_tracks_with_author_name_like(text,limit,skip)
-            case SearchMode.BOTH:
+            case TrackSearchMode.BOTH:
                 return await self.search_tracks_by_text(text,limit,skip)
     
     async def search_tracks_on_playlist(
@@ -344,7 +344,7 @@ class TrackService(Service[
         text:str,
         limit:int=100,
         skip:int=0,
-        search_mode:SearchMode=SearchMode.BOTH
+        search_mode:TrackSearchMode=TrackSearchMode.BOTH
     ) -> Sequence[TrackSchema]:
         '''
         Docstring for search_tracks_on_playlist
@@ -353,13 +353,13 @@ class TrackService(Service[
         :type text: str
         :type limit: int
         :type skip: int
-        :type search_mode: SearchMode
+        :type search_mode: TrackSearchMode
         :rtype: Sequence[TrackSchema]
         '''
         match search_mode:
-            case SearchMode.BOTH:
+            case TrackSearchMode.BOTH:
                 return await self.search_track_on_playlist_by_text(playlist_id,text,limit,skip)
-            case SearchMode.BY_AUTHOR:
+            case TrackSearchMode.BY_AUTHOR:
                 return await self.get_tracks_on_playlist_with_author_name_like(playlist_id,text,limit,skip)
-            case SearchMode.BY_NAME:
+            case TrackSearchMode.BY_NAME:
                 return await self.get_tracks_on_playlist_with_name_like(playlist_id,text,limit,skip)

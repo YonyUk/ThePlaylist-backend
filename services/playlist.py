@@ -4,6 +4,12 @@ from models import Playlist
 from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema
 from settings import ENVIRONMENT
 from .service import Service
+from enum import StrEnum
+
+class PlaylistSearchMode(StrEnum):
+    BY_NAME = 'by name'
+    BY_AUTHOR = 'by author'
+    BOTH = 'both'
 
 class PlaylistService(Service[
     Playlist,
@@ -59,3 +65,64 @@ class PlaylistService(Service[
         :rtype bool
         '''
         return await self._repository.exists_playlist_with_name_from_user(user_id,playlist_name)
+    
+    async def search_playlist_by_name(self,text:str,limit:int=100,skip:int=0) -> Sequence[PlaylistSchema]:
+        '''
+        Docstring for search_playlist_by_name
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[PlaylistSchema]
+        '''
+        playlists = await self._repository.search_playlists_by_name(text,limit,skip)
+        return [await self._to_schema(playlist) for playlist in playlists if playlist] # type: ignore
+    
+    async def search_playlists_by_author_name(self,text:str,limit:int=100,skip:int=0) -> Sequence[PlaylistSchema]:
+        '''
+        Docstring for search_playlists_by_author_name
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[PlaylistSchema]
+        '''
+        playlists = await self._repository.search_playlists_by_author_name(text,limit,skip)
+        return [await self._to_schema(playlist) for playlist in playlists if playlist] # type: ignore
+    
+    async def search_playlists_by_text(self,text:str,limit:int=100,skip:int=0) -> Sequence[PlaylistSchema]:
+        '''
+        Docstring for search_playlists_by_text
+        
+        :type text: str
+        :type limit: int
+        :type skipt: int
+        :rtype: Sequence[PlaylistSchema]
+        '''
+        playlists = await self._repository.search_playlists_by_text(text,limit,skip)
+        return [await self._to_schema(playlist) for playlist in playlists if playlist] # type: ignore
+
+    async def search_playlists(
+        self,
+        text:str,
+        limit:int=100,
+        skip:int=0,
+        search_mode:PlaylistSearchMode=PlaylistSearchMode.BOTH
+    ) -> Sequence[PlaylistSchema]:
+        '''
+        Docstring for search_playlists_by_text
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :type search_mode: PlaylistSearchMode
+        :rtype: Sequence[PlaylistSchema]
+        '''
+
+        match search_mode:
+            case PlaylistSearchMode.BOTH:
+                return await self.search_playlists_by_text(text,limit,skip)
+            case PlaylistSearchMode.BY_NAME:
+                return await self.search_playlist_by_name(text,limit,skip)
+            case PlaylistSearchMode.BY_AUTHOR:
+                return await self.search_playlists_by_author_name(text,limit,skip)
