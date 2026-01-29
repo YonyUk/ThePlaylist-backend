@@ -46,7 +46,7 @@ async def get_playlists(
     service:PlaylistService=Depends(get_playlist_service)
 ):
     if len(pattern) != 0:
-        return service.search_playlists(pattern,limit,page*limit,search_mode)
+        return await service.search_playlists(pattern,limit,page*limit,search_mode)
     
     return await service.get(
         limit,
