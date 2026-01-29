@@ -126,6 +126,6 @@ class PlaylistRepository(Repository[Playlist]):
             )
             .correlate(Playlist)
         )
-        query = select(Playlist).where(exists(subquery))
+        query = select(Playlist).where(exists(subquery)).offset(skip).limit(limit)
         result = await self._db.execute(query)
         return result.scalars().all()
