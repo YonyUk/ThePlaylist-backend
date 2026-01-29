@@ -10,6 +10,13 @@ from schemas import (
 )
 from .service import Service
 
+from enum import StrEnum
+
+class SearchMode(StrEnum):
+    BY_NAME = 'by name'
+    BY_AUTHOR = 'by author'
+    BOTH = 'both'
+
 class TrackService(Service[
     Track,
     TrackRepository,
@@ -179,6 +186,18 @@ class TrackService(Service[
         tracks = await self._repository.get_tracks_with_name_like(text,limit,skip)
         return [await self._to_schema(track) for track in tracks if track] # type: ignore
     
+    async def get_tracks_with_author_name_like(self,text:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_with_author_name_like
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_with_author_name_like(text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+
     async def get_tracks_from_user_with_name_like(
         self,
         user_id:str,
@@ -204,6 +223,29 @@ class TrackService(Service[
             skip
         )
         return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def get_tracks_from_user_with_author_name_like(
+        self,
+        user_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_from_user_with_author_name_like
+        
+        :type user_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_from_user_with_author_name_like(
+            user_id,
+            text,limit,
+            skip
+        )
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
 
     async def get_tracks_on_playlist(self,playlist_id:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
         '''
@@ -214,3 +256,110 @@ class TrackService(Service[
         '''
         tracks = await self._repository.get_tracks_on_playlist(playlist_id,limit,skip)
         return [await self._to_schema(track) for track in tracks if track]  # type: ignore
+    
+    async def get_tracks_on_playlist_with_name_like(
+        self,
+        playlist_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_on_playlist_with_name_like
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_on_playlists_with_name_like(playlist_id,text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def get_tracks_on_playlist_with_author_name_like(
+        self,
+        playlist_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[TrackSchema]:
+        '''
+        Docstring for get_tracks_on_playlist_with_author_name_like
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.get_tracks_on_playlists_with_author_name_like(playlist_id,text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def search_track_on_playlist_by_text(self,playlist_id:str,text:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
+        '''
+        Docstring for search_track_on_playlist_by_text
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.search_tracks_on_playlist_by_text(playlist_id,text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def search_tracks_by_text(self,text:str,limit:int=100,skip:int=0) -> Sequence[TrackSchema]:
+        '''
+        Docstring for search_tracks_by_text
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[TrackSchema]
+        '''
+        tracks = await self._repository.search_tracks_by_text(text,limit,skip)
+        return [await self._to_schema(track) for track in tracks if track] # type: ignore
+    
+    async def search_tracks(self,text:str,limit:int=100,skip:int=0,search_mode:SearchMode=SearchMode.BOTH) -> Sequence[TrackSchema]:
+        '''
+        Docstring for search_tracks
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :type search_mode: SearchMode
+        :rtype: Sequence[TrackSchema]
+        '''
+        match search_mode:
+            case SearchMode.BY_NAME:
+                return await self.get_tracks_with_name_like(text,limit,skip)
+            case SearchMode.BY_AUTHOR:
+                return await self.get_tracks_with_author_name_like(text,limit,skip)
+            case SearchMode.BOTH:
+                return await self.search_tracks_by_text(text,limit,skip)
+    
+    async def search_tracks_on_playlist(
+        self,
+        playlist_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0,
+        search_mode:SearchMode=SearchMode.BOTH
+    ) -> Sequence[TrackSchema]:
+        '''
+        Docstring for search_tracks_on_playlist
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :type search_mode: SearchMode
+        :rtype: Sequence[TrackSchema]
+        '''
+        match search_mode:
+            case SearchMode.BOTH:
+                return await self.search_track_on_playlist_by_text(playlist_id,text,limit,skip)
+            case SearchMode.BY_AUTHOR:
+                return await self.get_tracks_on_playlist_with_author_name_like(playlist_id,text,limit,skip)
+            case SearchMode.BY_NAME:
+                return await self.get_tracks_on_playlist_with_name_like(playlist_id,text,limit,skip)

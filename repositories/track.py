@@ -323,6 +323,19 @@ class TrackRepository(Repository):
         result = await self._db.execute(query)
         return result.scalars().all()
     
+    async def get_tracks_with_author_name_like(self,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_with_author_name_like
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(Track.author_name.like(f'%{text}%')).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
     async def get_tracks_from_user_with_name_like(
         self,
         user_id:str,
@@ -348,6 +361,29 @@ class TrackRepository(Repository):
         result = await self._db.execute(query)
         return result.scalars().all()
     
+    async def get_tracks_from_user_with_author_name_like(
+        self,
+        user_id:str,
+        text:str,
+        limit:int=100,
+        skip:int=0
+    ) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_from_user_with_author_name_like
+        
+        :type user_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(
+            (Track.author_name.like(f'%{text}%')) &
+            (Track.uploaded_by==user_id)
+        ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
     async def get_tracks_on_playlist(self,playlist_id:str,limit:int=100,skip:int=0) -> Sequence[Track]:
         '''
         Docstring for get_tracks_on_playlist
@@ -358,5 +394,72 @@ class TrackRepository(Repository):
         query = select(Track).join(Track.playlists).where(
             Playlist.id==playlist_id
         ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def get_tracks_on_playlists_with_name_like(self,playlist_id:str,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_on_playlists_with_name_like
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).join(Track.playlists).where(
+            Playlist.id==playlist_id
+        ).where(Track.name.like(f'%{text}%')).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def get_tracks_on_playlists_with_author_name_like(self,playlist_id:str,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for get_tracks_on_playlists_with_name_like
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).join(Track.playlists).where(
+            Playlist.id==playlist_id
+        ).where(Track.author_name.like(f'%{text}%')).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def search_tracks_on_playlist_by_text(self,playlist_id:str,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for search_tracks_on_playlist_by_text
+        
+        :type playlist_id: str
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).join(Track.playlists).where(
+            Playlist.id==playlist_id
+        ).where(
+            (Track.name.like(f'%{text}%')) |
+            (Track.author_name.like(f'%{text}%'))
+        ).offset(skip).limit(limit)
+        result = await self._db.execute(query)
+        return result.scalars().all()
+    
+    async def search_tracks_by_text(self,text:str,limit:int=100,skip:int=0) -> Sequence[Track]:
+        '''
+        Docstring for search_tracks_by_text
+        
+        :type text: str
+        :type limit: int
+        :type skip: int
+        :rtype: Sequence[Track]
+        '''
+        query = select(Track).where(
+            (Track.name.like(f'%{text}%')) |
+            (Track.author_name.like(f'%{text}%'))
+        )
         result = await self._db.execute(query)
         return result.scalars().all()

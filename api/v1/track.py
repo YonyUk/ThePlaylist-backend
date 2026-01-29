@@ -23,6 +23,8 @@ from services import (
 )
 from settings import ENVIRONMENT
 from tools import timeout
+from services.track import SearchMode
+
 
 logger = logging.getLogger(__name__)
 
@@ -83,16 +85,20 @@ async def upload_track(
 )
 async def get_tracks(
     playlist_id:str=Query('',description='playlist from where tracks will retrieved'),
+    pattern:str=Query('',description='text to search in tracks'),
+    search_mode:SearchMode=Query(SearchMode.BOTH,description='where the pattern will be searched'),
     page:int=Query(0,description='page of results',ge=0),
     limit:int=Query(1,description='limit of results',ge=1,le=ENVIRONMENT.MAX_LIMIT_ALLOWED),
     service:TrackService=Depends(get_track_service),
     playlist_service:PlaylistService=Depends(get_playlist_service)
 ):
     if len(playlist_id) == 0:
-        return await service.get(
-            limit,
-            page*limit
-        )
+        if len(pattern) == 0:
+            return await service.get(
+                limit,
+                page*limit
+            )
+        return await service.search_tracks(pattern,limit,page*limit,search_mode)
     
     db_playlist = await playlist_service.get_by_id(playlist_id)
     if not db_playlist:
@@ -101,7 +107,10 @@ async def get_tracks(
             detail=f'No playlist with id {playlist_id} was found'
         )
     
-    return await service.get_tracks_on_playlist(playlist_id,limit,page*limit)
+    if len(pattern) == 0:
+        return await service.get_tracks_on_playlist(playlist_id,limit,page*limit)
+    
+    return await service.search_tracks_on_playlist(playlist_id,pattern,limit,page*limit,search_mode)
 
 @router.get(
     '/mytracks',
