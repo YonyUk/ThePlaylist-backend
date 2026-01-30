@@ -1,6 +1,13 @@
 from typing import Sequence
 from fastapi import APIRouter,HTTPException,status,Depends,Query
-from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,UserSchema,ExistencialQuerySchema
+from schemas import (
+    PlaylistCreateSchema,
+    PlaylistUpdateSchema,
+    PlaylistSchema,
+    PlaylistPrivateUpdateSchema,
+    UserSchema,
+    ExistencialQuerySchema
+)
 from services import (
     UserService,
     PlaylistService,
@@ -121,6 +128,69 @@ async def get_playlist(
     return db_playlist
 
 @router.put(
+    '/{playlist_id}',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def update(
+    playlist_id:str,
+    update_data:PlaylistPrivateUpdateSchema,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    if user.id != db_playlist.author_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=f'Only can modify your own data'
+        )
+    
+    db_playlist = await service.private_update(
+        playlist_id,
+        update_data,
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays,
+        author_id=db_playlist.author_id
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.get(
+    '/{playlist_id}/stats/likes',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def liked(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    return await service.liked_by(user.id,playlist_id)
+
+@router.put(
     '/{playlist_id}/stats/likes',
     status_code=status.HTTP_202_ACCEPTED,
     response_model=PlaylistSchema
@@ -130,40 +200,367 @@ async def add_like_to_playlist(
     user:UserSchema=Depends(get_current_user),
     service:PlaylistService=Depends(get_playlist_service)
 ):
-    pass
-
-@router.put(
-    '/{playlist_id}',
-    status_code=status.HTTP_202_ACCEPTED,
-    response_model=PlaylistSchema
-)
-async def update(
-    playlist_id:str,
-    update_data:PlaylistUpdateSchema,
-    current_user:UserSchema=Depends(get_current_user),
-    service:PlaylistService=Depends(get_playlist_service)
-):
     db_playlist = await service.get_by_id(playlist_id)
+
     if not db_playlist:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No playlist with id {playlist_id} was found'
         )
-    if current_user.id != db_playlist.author_id:
+    
+    result = await service.add_like_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Only can modify your own playlists'
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
         )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes + 1,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays
+    )
+
     db_playlist = await service.update(
         playlist_id,
         update_data,
-        author_id=current_user.id
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
     )
+
     if not db_playlist:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail='An unexpected error has occurred while updating'
+            detail='An unexpected error has ocurred while updata playlist info'
         )
+    return db_playlist
+
+@router.delete(
+    '/{playlist_id}/stats/likes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def remove_like_from_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    result = await service.remove_like_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes - 1,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.get(
+    '/{playlist_id}/stats/dislikes',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def disliked(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    return await service.liked_by(user.id,playlist_id)
+
+@router.put(
+    '/{playlist_id}/stats/dislikes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def add_dislike_to_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    result = await service.add_dislike_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes + 1,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.delete(
+    '/{playlist_id}/stats/dislikes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def remove_dislike_from_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    result = await service.remove_dislike_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes - 1,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.get(
+    '/{playlist_id}/stats/loves',
+    status_code=status.HTTP_200_OK,
+    response_model=ExistencialQuerySchema
+)
+async def loved(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    return await service.liked_by(user.id,playlist_id)
+
+@router.put(
+    '/{playlist_id}/stats/loves',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def add_love_to_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    result = await service.add_love_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves + 1,
+        plays=db_playlist.plays
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.delete(
+    '/{playlist_id}/stats/loves',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def remove_love_from_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    result = await service.remove_love_from_user_to_playlist(user.id,playlist_id)
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='operation failed'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves - 1,
+        plays=db_playlist.plays
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
+    return db_playlist
+
+@router.put(
+    '/{playlist_id}/stats/plays',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def add_play_to_playlist(
+    playlist_id:str,
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    db_playlist = await service.get_by_id(playlist_id)
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f'No playlist with id {playlist_id} was found'
+        )
+    
+    update_data:PlaylistUpdateSchema = PlaylistUpdateSchema(
+        likes=db_playlist.likes,
+        dislikes=db_playlist.dislikes,
+        loves=db_playlist.loves,
+        plays=db_playlist.plays + 1
+    )
+
+    db_playlist = await service.update(
+        playlist_id,
+        update_data,
+        name=db_playlist.name,
+        author_id=db_playlist.author_id,
+        description=db_playlist.description
+    )
+
+    if not db_playlist:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail='An unexpected error has ocurred while update playlist info'
+        )
+    
     return db_playlist
 
 @router.put(

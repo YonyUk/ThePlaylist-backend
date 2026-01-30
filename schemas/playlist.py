@@ -30,7 +30,14 @@ class PlaylistCreateSchema(PlaylistBaseSchema):
     schema for 'Playlist' entity creation
     '''
 
-class PlaylistUpdateSchema(PlaylistBaseSchema):
+class PlaylistPrivateUpdateSchema(PlaylistBaseSchema):
+    '''
+    Docstring for PlaylistPrivateUpdateSchema
+    
+    schema for 'Playlist' entity private update
+    '''
+
+class PlaylistUpdateSchema(BaseModel):
     '''
     Docstring for PlaylistUpdateSchema
     
@@ -49,13 +56,17 @@ class NestedTrackSchema(BaseModel):
     name:str
     author_name:str
 
-class PlaylistSchema(PlaylistUpdateSchema):
+class PlaylistSchema(PlaylistBaseSchema):
     '''
     Docstring for PlaylistSchema
     
     schema for 'Playlist' entity
     '''
     id:str
+    likes:int
+    dislikes:int
+    loves:int
+    plays:int
     author_id:str
     author:str
     tracks:List[NestedTrackSchema]

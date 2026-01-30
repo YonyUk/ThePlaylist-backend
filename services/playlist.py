@@ -1,7 +1,7 @@
 from typing import Sequence
 from repositories import PlaylistRepository
 from models import Playlist
-from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,ExistencialQuerySchema
+from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,ExistencialQuerySchema,PlaylistPrivateUpdateSchema
 from settings import ENVIRONMENT
 from .service import Service
 from enum import StrEnum
@@ -22,6 +22,30 @@ class PlaylistService(Service[
     def __init__(self,repository: PlaylistRepository,exclude_fields:set=set(), exclude_unset: bool = True):
         super().__init__(Playlist,PlaylistSchema,repository, exclude_fields, exclude_unset)
     
+    async def private_update(self,playlist_id:str,update_data:PlaylistPrivateUpdateSchema,**extra_fields) -> PlaylistSchema | None:
+        '''
+        Docstring for private_update
+        
+        :type playlist_id: str
+        :type update_data: PlaylistPrivateUpdateSchema
+        :rtype: PlaylistSchema
+        '''
+        db_instance = await self.get_by_id(playlist_id)
+        if not db_instance:
+            return None
+        update_instance = await self._get_instance(**{
+            **update_data.model_dump(
+                exclude=self._exclude_fields,
+                exclude_unset=self._exclude_unset
+            ),
+            **extra_fields,
+            **{
+                'id':playlist_id
+            }
+        })
+        result = await self._repository.update(playlist_id,update_instance)
+        return await self._to_schema(result)
+
     async def liked_by(self,user_id:str,playlist_id:str) -> ExistencialQuerySchema:
         '''
         Docstring for liked_by
