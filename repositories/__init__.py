@@ -40,7 +40,8 @@ def get_track_repository(
 
 def get_playlist_repository(
     db:AsyncSession=Depends(get_database_session),
-    track_repository:TrackRepository=Depends(get_track_repository)
+    track_repository:TrackRepository=Depends(get_track_repository),
+    user_repository:UserRepository=Depends(get_user_repository)
 ):
     '''
     Docstring for get_playlist_repository
@@ -50,7 +51,7 @@ def get_playlist_repository(
     :return: the 'PlaylistRepository' dependency
     :rtype: PlaylistRepository
     '''
-    repository = PlaylistRepository(db,track_repository)
+    repository = PlaylistRepository(db,track_repository,user_repository)
     try:
         yield repository
     finally:
