@@ -35,3 +35,21 @@ class User(BaseModel):
         back_populates='users_loves',
         secondary='tracks_loves'
     )
+
+    playlists_likes = relationship(
+        'Playlist',
+        back_populates='users_likes',
+        secondary='playlists_likes'
+    )
+
+    playlists_dislikes = relationship(
+        'Playlist',
+        back_populates='users_dislikes',
+        secondary='playlists_dislikes'
+    )
+
+    playlists_loves = relationship(
+        'Playlist',
+        back_populates='users_loves',
+        secondary='playlists_loves'
+    )

@@ -1,6 +1,27 @@
-from sqlalchemy import String,BigInteger,ForeignKey
+from sqlalchemy import String,BigInteger,ForeignKey,Column,Table
 from sqlalchemy.orm import mapped_column,Mapped,relationship
 from database import BaseModel
+
+playlists_likes = Table(
+    'playlists_likes',
+    BaseModel.metadata,
+    Column('playlist_id',String,ForeignKey('playlists.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
+
+playlists_dislikes = Table(
+    'playlists_dislikes',
+    BaseModel.metadata,
+    Column('playlist_id',String,ForeignKey('playlists.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
+
+playlists_loves = Table(
+    'playlists_loves',
+    BaseModel.metadata,
+    Column('playlist_id',String,ForeignKey('playlists.id',ondelete='CASCADE'),primary_key=True,index=True),
+    Column('user_id',String,ForeignKey('users.id',ondelete='CASCADE'),primary_key=True,index=True)
+)
 
 class Playlist(BaseModel):
     '''
@@ -27,4 +48,22 @@ class Playlist(BaseModel):
         back_populates='playlists',
         lazy='selectin',
         secondary='playlists_tracks'
+    )
+
+    users_likes = relationship(
+        'User',
+        back_populates='playlists_likes',
+        secondary=playlists_likes
+    )
+
+    users_dislikes = relationship(
+        'User',
+        back_populates='playlists_dislikes',
+        secondary=playlists_dislikes
+    )
+
+    users_loves = relationship(
+        'User',
+        back_populates='playlists_loves',
+        secondary=playlists_loves
     )

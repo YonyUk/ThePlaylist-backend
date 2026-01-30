@@ -121,6 +121,18 @@ async def get_playlist(
     return db_playlist
 
 @router.put(
+    '/{playlist_id}/stats/likes',
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=PlaylistSchema
+)
+async def add_like_to_playlist(
+    playlist_id:str,
+    user:UserSchema=Depends(get_current_user),
+    service:PlaylistService=Depends(get_playlist_service)
+):
+    pass
+
+@router.put(
     '/{playlist_id}',
     status_code=status.HTTP_202_ACCEPTED,
     response_model=PlaylistSchema
@@ -249,6 +261,13 @@ async def delete(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f'No playlist with id {playlist_id} was found'
         )
+    
+    if current_user.id != db_playlist.author_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Only can modify your own data'
+        )
+    
     deleted = await service.delete(playlist_id)
     if not deleted:
         raise HTTPException(
