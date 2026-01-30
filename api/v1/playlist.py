@@ -305,7 +305,7 @@ async def disliked(
             detail=f'No playlist with id {playlist_id} was found'
         )
     
-    return await service.liked_by(user.id,playlist_id)
+    return await service.disliked_by(user.id,playlist_id)
 
 @router.put(
     '/{playlist_id}/stats/dislikes',
@@ -423,7 +423,7 @@ async def loved(
             detail=f'No playlist with id {playlist_id} was found'
         )
     
-    return await service.liked_by(user.id,playlist_id)
+    return await service.loved_by(user.id,playlist_id)
 
 @router.put(
     '/{playlist_id}/stats/loves',
