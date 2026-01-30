@@ -1,7 +1,7 @@
 from typing import Sequence
 from repositories import PlaylistRepository
 from models import Playlist
-from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema
+from schemas import PlaylistCreateSchema,PlaylistUpdateSchema,PlaylistSchema,ExistencialQuerySchema
 from settings import ENVIRONMENT
 from .service import Service
 from enum import StrEnum
@@ -22,6 +22,99 @@ class PlaylistService(Service[
     def __init__(self,repository: PlaylistRepository,exclude_fields:set=set(), exclude_unset: bool = True):
         super().__init__(Playlist,PlaylistSchema,repository, exclude_fields, exclude_unset)
     
+    async def liked_by(self,user_id:str,playlist_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for liked_by
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: ExistencialQuerySchema
+        '''
+        result = await self._repository.liked_by(user_id,playlist_id)
+        return ExistencialQuerySchema(result=result)
+    
+    async def disliked_by(self,user_id:str,playlist_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for disliked_by
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: ExistencialQuerySchema
+        '''
+        result = await self._repository.disliked_by(user_id,playlist_id)
+        return ExistencialQuerySchema(result=result)
+    
+    async def loved_by(self,user_id:str,playlist_id:str) -> ExistencialQuerySchema:
+        '''
+        Docstring for loved_by
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: ExistencialQuerySchema
+        '''
+        result = await self._repository.loved_by(user_id,playlist_id)
+        return ExistencialQuerySchema(result=result)
+    
+    async def add_like_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for add_like_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_like_from_user_to_playlist(user_id,playlist_id)
+    
+    async def remove_like_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for remove_like_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_like_from_user_to_playlist(user_id,playlist_id)
+    
+    async def add_dislike_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for add_dislike_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_dislike_from_user_to_playlist(user_id,playlist_id)
+    
+    async def remove_dislike_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for remove_dislike_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_dislike_from_user_to_playlist(user_id,playlist_id)
+    
+    async def add_love_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for add_love_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.add_love_from_user_to_playlist(user_id,playlist_id)
+    
+    async def remove_love_from_user_to_playlist(self,user_id:str,playlist_id:str) -> bool:
+        '''
+        Docstring for remove_love_from_user_to_playlist
+        
+        :type user_id: str
+        :type playlist_id: str
+        :rtype: bool
+        '''
+        return await self._repository.remove_love_from_user_to_playlist(user_id,playlist_id)
+
     async def add_track_to_playlist(self,playlist_id:str,track_id:str) -> bool:
         '''
         Docstring for add_track_to_playlist
