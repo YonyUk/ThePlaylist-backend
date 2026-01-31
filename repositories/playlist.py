@@ -448,10 +448,9 @@ class PlaylistRepository(Repository[Playlist]):
             )
             .correlate(Playlist)
         )
-        query = select(Playlist).where(exists(subquery)).where(Playlist.name.like(f'%{text}%')).union(
-            select(Playlist).where(exists(subquery)).join(Playlist.author).where(
-                User.username.like(f'%{text}%')
-            )
-        ).offset(skip).limit(limit)
+        query = select(Playlist).where(exists(subquery)).options(selectinload(Playlist.author)).where(
+            (Playlist.name.like(f'%{text}%')) |
+            (Playlist.author.has(User.username.like(f'%{text}%')))
+        )
         result = await self._db.execute(query)
         return result.scalars().all()
