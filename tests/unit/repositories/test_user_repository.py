@@ -16,11 +16,10 @@ class TestUserRepository:
 
     @pytest.mark.asyncio
     async def test_create_user(self):
-        
         self.mock_db.add = MagicMock()
         self.mock_db.commit = AsyncMock()
         self.mock_db.refresh = AsyncMock()
-
+        
         async def mock_refresh(instance):
             if instance is None:
                 instance = self.mock_user
@@ -101,7 +100,10 @@ class TestUserRepository:
     
     @pytest.mark.asyncio
     async def test_update_user(self):
-
+        
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        
         modified_user = User(
             id=self.mock_user.id,
             username='other',
@@ -121,10 +123,6 @@ class TestUserRepository:
             instance.username = modified_user.username
             instance.email = modified_user.email
             instance.hashed_password = modified_user.hashed_password
-    
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-        self.mock_db.execute = AsyncMock()
 
         self.mock_db.refresh.side_effect = mock_refresh
 
@@ -135,13 +133,68 @@ class TestUserRepository:
 
         self.mock_db.commit.assert_awaited_once()
         self.mock_db.refresh.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once()
 
         assert user is not None
         assert user.id == self.mock_user.id
         assert user.username == modified_user.username
         assert user.email == modified_user.email
         assert user.hashed_password == modified_user.hashed_password
+
+    @pytest.mark.asyncio
+    async def test_update_wrong_user(self):
+        self.mock_db.commit = AsyncMock()
+        self.mock_db.refresh = AsyncMock()
+        
+        modified_user = User(
+            id=self.mock_user.id,
+            username='other',
+            email='other@gmail.com',
+            hashed_password='new password'
+        )
+        
+        def instance_to_dict(instance:User) -> dict:
+            return {
+                'id':instance.id,
+                'username':instance.username,
+                'email':instance.email,
+                'hashed_password':instance.hashed_password
+            }
+
+        async def mock_refresh(instance):
+            instance.username = modified_user.username
+            instance.email = modified_user.email
+            instance.hashed_password = modified_user.hashed_password
+
+        self.mock_db.refresh.side_effect = mock_refresh
+
+        with patch('repositories.user.UserRepository.get_by_id',return_value=None):
+            with patch('repositories.user.UserRepository._instance_to_dict',return_value=instance_to_dict(modified_user)):
+                repository = UserRepository(self.mock_db)
+                user = await repository.update('wrong_id',modified_user)
+
+        assert user is None
+
+    @pytest.mark.asyncio
+    async def test_delete_user(self):
+        self.mock_db.delete = AsyncMock()
+        self.mock_db.commit = AsyncMock()
+
+        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
+            repository = UserRepository(self.mock_db)
+            result = await repository.delete(self.mock_user.id)
+        
+        self.mock_db.delete.assert_awaited_once()
+        self.mock_db.commit.assert_awaited_once()
+
+        assert result == True
+
+    @pytest.mark.asyncio
+    async def test_delete_wrong_user(self):
+        with patch('repositories.user.UserRepository.get_by_id',return_value=None):
+            repository = UserRepository(self.mock_db)
+            result = await repository.delete('wrong_id')
+        
+        assert result == False
 
     @pytest.mark.asyncio
     async def test_get_users(self):
