@@ -8,202 +8,190 @@ from services import UserService
 
 class TestUserService:
 
-    mock_repository = AsyncMock(spec=UserRepository)
-    mock_user = User(
-            id='user_id',
-            username='username',
-            email='user@gmail.com',
-            hashed_password='hashed_password'
-        )
+    def assert_users_equals(self,user_result:UserSchema | None,user_base:User):
+        assert user_result is not None
+        assert user_result.id == user_base.id
+        assert user_result.username == user_base.username
+        assert user_result.email == user_base.email
 
     @pytest.mark.asyncio
-    async def test_create_user(self):
+    async def test_create_user(
+        self,
+        mocked_user_repository,
+        mocked_user,
+        mocked_user_create
+    ):
 
-        mock_user_create = UserCreateSchema(
-            username='username',
-            email='user@gmail.com',
-            password='password'
-        )
+        mocked_user_repository.create.return_value = mocked_user
+        service = UserService(mocked_user_repository)
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.create.return_value = self.mock_user
-        service = UserService(mock_repository)
+        user = await service.create(mocked_user_create)
 
-        user = await service.create(mock_user_create)
-
-        mock_repository.create.assert_awaited_once()
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == mock_user_create.username
-        assert user.email == mock_user_create.email
+        mocked_user_repository.create.assert_awaited_once()
+        self.assert_users_equals(user,mocked_user)
     
     @pytest.mark.asyncio
-    async def test_get_user(self):
+    async def test_get_user(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_id.return_value = self.mock_user
-        service = UserService(mock_repository)
+        mocked_user_repository.get_by_id.return_value = mocked_user
+        service = UserService(mocked_user_repository)
 
-        user = await service.get_by_id(self.mock_user.id)
+        user = await service.get_by_id(mocked_user.id)
 
-        mock_repository.get_by_id.assert_awaited_once_with(self.mock_user.id)
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
+        mocked_user_repository.get_by_id.assert_awaited_once_with(mocked_user.id)
+        self.assert_users_equals(user,mocked_user)
     
     @pytest.mark.asyncio
-    async def test_get_wrong_user(self):
+    async def test_get_wrong_user(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_id.return_value = None
-        service = UserService(mock_repository)
+        mocked_user_repository.get_by_id.return_value = None
+        service = UserService(mocked_user_repository)
 
-        user = await service.get_by_id(self.mock_user.id)
+        user = await service.get_by_id(mocked_user.id)
 
-        mock_repository.get_by_id.assert_awaited_once_with(self.mock_user.id)
+        mocked_user_repository.get_by_id.assert_awaited_once_with(mocked_user.id)
 
         assert user is None
     
     @pytest.mark.asyncio
-    async def test_get_users(self):
+    async def test_get_users(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_instances.return_value = [self.mock_user]
-        service = UserService(mock_repository)
+        mocked_user_repository.get_instances.return_value = [mocked_user]
+        service = UserService(mocked_user_repository)
 
         users = await service.get()
 
-        mock_repository.get_instances.assert_awaited_once()
+        mocked_user_repository.get_instances.assert_awaited_once()
 
         assert len(users) == 1
-        assert users[0].id == self.mock_user.id
-        assert users[0].username == self.mock_user.username
-        assert users[0].email == self.mock_user.email
+        self.assert_users_equals(users[0],mocked_user)
     
     @pytest.mark.asyncio
-    async def test_update_user(self):
+    async def test_update_user(
+        self,
+        mocked_user_repository,
+        mocked_user,
+        mocked_user_update,
+        mocked_modified_user
+    ):
 
-        mock_user_update = UserUpdateSchema(
-            username='new username',
-            email='new@gmail.com',
-            password='new password'
-        )
+        mocked_user_repository.get_by_id.return_value=mocked_user
+        mocked_user_repository.update = AsyncMock()
+        mocked_user_repository.update.return_value = mocked_modified_user
 
-        mock_modified_user = User(
-            id='user_id',
-            username='new username',
-            email='new@gmail.com',
-            hashed_password='new hashed_password'
-        )
+        service = UserService(mocked_user_repository)
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_id.return_value=self.mock_user
-        mock_repository.update = AsyncMock()
-        mock_repository.update.return_value = mock_modified_user
+        user = await service.update(mocked_user.id,mocked_user_update)
 
-        with patch('services.user.UserService._get_instance',return_value=mock_modified_user):
-            service = UserService(mock_repository)
+        mocked_user_repository.get_by_id.assert_awaited_once_with(mocked_user.id)
+        mocked_user_repository.update.assert_awaited_once()
 
-            user = await service.update(self.mock_user.id,mock_user_update)
-
-        
-        mock_repository.get_by_id.assert_awaited_once_with(self.mock_user.id)
-        mock_repository.update.assert_awaited_once_with(self.mock_user.id,mock_modified_user)
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == mock_user_update.username
-        assert user.email == mock_user_update.email
+        self.assert_users_equals(user,mocked_modified_user)
     
     @pytest.mark.asyncio
-    async def test_delete_user(self):
+    async def test_delete_user(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
         
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.delete.return_value = True
+        mocked_user_repository.delete.return_value = True
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
-        result = await service.delete(self.mock_user.id)
+        result = await service.delete(mocked_user.id)
 
-        mock_repository.delete.assert_awaited_once_with(self.mock_user.id)
-
+        mocked_user_repository.delete.assert_awaited_once_with(mocked_user.id)
         assert result == True
     
     @pytest.mark.asyncio
-    async def test_delete_wrong_user(self):
+    async def test_delete_wrong_user(
+        self,
+        mocked_user_repository
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.delete.return_value = False
+        mocked_user_repository.delete.return_value = False
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
         result = await service.delete('fake id')
 
-        mock_repository.delete.assert_awaited_once_with('fake id')
+        mocked_user_repository.delete.assert_awaited_once_with('fake id')
 
         assert result == False
     
     @pytest.mark.asyncio
-    async def test_get_user_by_name(self):
+    async def test_get_user_by_name(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_name.return_value = self.mock_user
+        mocked_user_repository.get_by_name.return_value = mocked_user
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
-        user = await service.get_by_name(self.mock_user.username)
+        user = await service.get_by_name(mocked_user.username)
 
-        mock_repository.get_by_name.assert_awaited_once_with(self.mock_user.username)
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
+        mocked_user_repository.get_by_name.assert_awaited_once_with(mocked_user.username)
+        self.assert_users_equals(user,mocked_user)
     
     @pytest.mark.asyncio
-    async def test_get_user_by_email(self):
+    async def test_get_user_by_email(
+        self,
+        mocked_user_repository,
+        mocked_user
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_email.return_value = self.mock_user
+        mocked_user_repository.get_by_email.return_value = mocked_user
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
-        user = await service.get_by_email(self.mock_user.email)
+        user = await service.get_by_email(mocked_user.email)
 
-        mock_repository.get_by_email.assert_awaited_once_with(self.mock_user.email)
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
+        mocked_user_repository.get_by_email.assert_awaited_once_with(mocked_user.email)
+        self.assert_users_equals(user,mocked_user)
     
     @pytest.mark.asyncio
-    async def test_get_user_by_wrong_name(self):
+    async def test_get_user_by_wrong_name(
+        self,
+        mocked_user_repository
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_name.return_value = None
+        mocked_user_repository.get_by_name.return_value = None
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
         user = await service.get_by_name('wrong username')
 
-        mock_repository.get_by_name.assert_awaited_once_with('wrong username')
+        mocked_user_repository.get_by_name.assert_awaited_once_with('wrong username')
 
         assert user is None
     
     @pytest.mark.asyncio
-    async def test_get_user_by_wrong_email(self):
+    async def test_get_user_by_wrong_email(
+        self,
+        mocked_user_repository
+    ):
 
-        mock_repository = AsyncMock(spec=UserRepository)
-        mock_repository.get_by_email.return_value = None
+        mocked_user_repository.get_by_email.return_value = None
 
-        service = UserService(mock_repository)
+        service = UserService(mocked_user_repository)
 
         user = await service.get_by_email('wrong email')
 
-        mock_repository.get_by_email.assert_awaited_once_with('wrong email')
+        mocked_user_repository.get_by_email.assert_awaited_once_with('wrong email')
 
         assert user is None

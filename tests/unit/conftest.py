@@ -6,9 +6,21 @@ import asyncio
 from httpx import AsyncClient
 from asgi_lifespan import LifespanManager 
 from sqlalchemy.ext.asyncio import create_async_engine,AsyncSession,async_sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 from settings import ENVIRONMENT
+from unittest.mock import AsyncMock,MagicMock
 from database import BaseModel,get_database_session
+from repositories import UserRepository,PlaylistRepository,TrackRepository
+from models import User,Track,Playlist
+from schemas import (
+    UserCreateSchema,
+    UserUpdateSchema,
+    TrackUploadSchema,
+    TrackPrivateUpdateSchema,
+    TrackUpdateSchema,
+    PlaylistCreateSchema,
+    PlaylistPrivateUpdateSchema,
+    PlaylistUpdateSchema
+)
 from main import app
 
 dotenv.load_dotenv()
@@ -89,3 +101,42 @@ async def async_client(db_test_session):
     
     app.dependency_overrides.clear()
 
+########### Fixtures for Unit Test of UserRepository #################
+
+@pytest_asyncio.fixture
+async def mocked_user_repository():
+    return AsyncMock(spec=UserRepository)
+
+@pytest_asyncio.fixture
+async def mocked_user():
+    return User(
+        id='user_id',
+        username='username',
+        email='user@gmail.com',
+        hashed_password='hashed_password'
+    )
+
+@pytest_asyncio.fixture
+async def mocked_user_create():
+    return UserCreateSchema(
+        username='username',
+        email='user@gmail.com',
+        password='password'
+    )
+
+@pytest_asyncio.fixture
+async def mocked_user_update():
+    return UserUpdateSchema(
+        username='new username',
+        email='new@gmail.com',
+        password='new password'
+    )
+
+@pytest_asyncio.fixture
+async def mocked_modified_user(mocked_user):
+    return User(
+        id=mocked_user.id,
+        username='new username',
+        email='new@gmail.com',
+        hashed_password='new hashed_password'
+    )
