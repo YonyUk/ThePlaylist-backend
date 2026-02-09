@@ -37,5 +37,7 @@ class UserRepository(Repository[User]):
     async def _try_get_instance(self, instance: User) -> User | None:
         db_instance = await self.get_by_id(str(instance.id))
         if not db_instance:
-            return await self.get_by_email(str(instance.email))
+            db_instance = await self.get_by_email(str(instance.email))
+        if not db_instance:
+            return await self.get_by_name(str(instance.username))
         return db_instance

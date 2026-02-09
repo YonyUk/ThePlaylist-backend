@@ -7,204 +7,233 @@ from repositories import UserRepository
 
 class TestUserRepository:
 
-    mock_db = AsyncMock(spec=AsyncSession)
-    mock_user = User(
-        username='user',
-        email='user@gmail.com',
-        hashed_password='hashed_password'
-    )
+    def assert_users_equals(self,user_result:User,user_base:User):
+        assert user_result is not None
+        assert user_result.id == user_base.id
+        assert user_result.username == user_base.username
+        assert user_result.email == user_base.email
+        assert user_result.hashed_password == user_base.hashed_password
 
     @pytest.mark.asyncio
-    async def test_create_user(self):
-        self.mock_db.add = MagicMock()
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
+    async def test_create_user(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user
+    ):
         
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = None
+
+        repository = UserRepository(mocked_db)
+        user = await repository.create(db_mocked_user)
+
+        assert mocked_db.execute.await_count == 3
+        for call in mocked_db.execute.await_args_list:
+            query = str(call[0][0])
+            print(query)
+            assert 'SELECT' in query
+        
+        calls = list(map(lambda call:str(call[0][0]),mocked_db.execute.await_args_list))
+        id_query = filter(lambda query: 'WHERE users.id =' in query,calls)
+        email_query = filter(lambda query: 'WHERE users.email =' in query,calls)
+        username_query = filter(lambda query: 'WHERE users.username =' in query,calls)
+        assert len(list(id_query)) == 1
+        assert len(list(email_query)) == 1
+        assert len(list(username_query)) == 1
+            
+        mocked_db.add.assert_called_once_with(db_mocked_user)
+        mocked_db.commit.assert_awaited_once()
+        mocked_db.refresh.assert_awaited_once_with(db_mocked_user)
+        self.assert_users_equals(user,db_mocked_user)
+    
+    @pytest.mark.asyncio
+    async def test_get_user_by_id(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_user
+        
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_id(db_mocked_user.id)
+        
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.id =' in query
+        self.assert_users_equals(user,db_mocked_user)
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_wrong_id(
+        self,
+        mocked_db,
+        mocked_get_execute_result
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = None
+
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_id('')
+        
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.id =' in query
+        assert user is None
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_name(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_user
+
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_name(db_mocked_user.username)
+
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.username =' in query
+        self.assert_users_equals(user,db_mocked_user)
+    
+    @pytest.mark.asyncio
+    async def test_get_user_by_wrong_name(
+        self,
+        mocked_db,
+        mocked_get_execute_result
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = None
+
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_name('')
+
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.username =' in query
+        assert user is None
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_email(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_user
+
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_email(db_mocked_user.email)
+
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.email =' in query
+        self.assert_users_equals(user,db_mocked_user)
+
+    @pytest.mark.asyncio
+    async def test_get_user_by_wrong_email(
+        self,
+        mocked_db,
+        mocked_get_execute_result
+    ):
+        
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = None
+
+        repository = UserRepository(mocked_db)
+        user = await repository.get_by_email('')
+        assert user is None
+    
+    @pytest.mark.asyncio
+    async def test_update_user(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user,
+        db_mocked_update_user
+    ):
+        
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_user
+
+        async def mock_execute(query):
+            if 'SELECT' in str(query):
+                return mocked_get_execute_result
+            return None
+        
+        mocked_db.execute.side_effect = mock_execute
+
         async def mock_refresh(instance):
-            if instance is None:
-                instance = self.mock_user
-            if hasattr(instance,'id') and instance.id is None: # type: ignore
-                instance.id = 'user_id' # type: ignore
-        
-        self.mock_db.refresh.side_effect = mock_refresh
+            instance.username = db_mocked_update_user.username
+            instance.email = db_mocked_update_user.email
+            instance.hashed_password = db_mocked_update_user.hashed_password
 
-        with patch('repositories.user.UserRepository._try_get_instance',side_effect=lambda x:None):
-
-            repository = UserRepository(self.mock_db)
-            user = await repository.create(self.mock_user)
+        mocked_db.refresh.side_effect = mock_refresh
         
-        self.mock_db.add.assert_called_once()
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(user)
+        repository = UserRepository(mocked_db)
+        user = await repository.update(db_mocked_user.id,db_mocked_update_user)
 
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
-        assert user.hashed_password == self.mock_user.hashed_password
-    
-    @pytest.mark.asyncio
-    async def test_get_user_by_id(self):
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_id(self.mock_user.id)
-        
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
-        assert user.hashed_password == self.mock_user.hashed_password
-    
-    @pytest.mark.asyncio
-    async def test_get_user_by_wrong_id(self):
-        with patch('repositories.user.UserRepository.get_by_id',return_value=None):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_id('')
-        assert user is None
+        assert mocked_db.execute.await_count == 2
+        calls = list(map(lambda call:str(call[0][0]),mocked_db.execute.await_args_list))
+        select_query = filter(lambda query: 'SELECT' in query,calls)
+        update_query = filter(lambda query: 'UPDATE' in query,calls)
+        assert len(list(select_query)) == 1
+        assert len(list(update_query)) == 1
+        mocked_db.commit.assert_awaited_once()
+        mocked_db.refresh.assert_awaited_once_with(db_mocked_user)
+        self.assert_users_equals(user,db_mocked_update_user)
 
     @pytest.mark.asyncio
-    async def test_get_user_by_name(self):
-        with patch('repositories.user.UserRepository.get_by_name',return_value=self.mock_user):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_name(self.mock_user.username)
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
-        assert user.hashed_password == self.mock_user.hashed_password
-    
-    @pytest.mark.asyncio
-    async def test_get_user_by_wrong_name(self):
-        with patch('repositories.user.UserRepository.get_by_name',return_value=None):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_name('')
-        assert user is None
+    async def test_delete_user(
+        self,
+        mocked_db,
+        mocked_get_execute_result,
+        db_mocked_user
+    ):
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_user
 
-    @pytest.mark.asyncio
-    async def test_get_user_by_email(self):
-        with patch('repositories.user.UserRepository.get_by_email',return_value=self.mock_user):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_email(self.mock_user.email)
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == self.mock_user.username
-        assert user.email == self.mock_user.email
-        assert user.hashed_password == self.mock_user.hashed_password
+        repository = UserRepository(mocked_db)
+        result = await repository.delete(db_mocked_user.id)
 
-    @pytest.mark.asyncio
-    async def test_get_user_by_wrong_email(self):
-        with patch('repositories.user.UserRepository.get_by_email',return_value=None):
-            repository = UserRepository(self.mock_db)
-            user = await repository.get_by_email(self.mock_user.username)
-        assert user is None
-    
-    @pytest.mark.asyncio
-    async def test_update_user(self):
-        
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-        
-        modified_user = User(
-            id=self.mock_user.id,
-            username='other',
-            email='other@gmail.com',
-            hashed_password='new password'
-        )
-        
-        def instance_to_dict(instance:User) -> dict:
-            return {
-                'id':instance.id,
-                'username':instance.username,
-                'email':instance.email,
-                'hashed_password':instance.hashed_password
-            }
-
-        async def mock_refresh(instance):
-            instance.username = modified_user.username
-            instance.email = modified_user.email
-            instance.hashed_password = modified_user.hashed_password
-
-        self.mock_db.refresh.side_effect = mock_refresh
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            with patch('repositories.user.UserRepository._instance_to_dict',return_value=instance_to_dict(modified_user)):
-                repository = UserRepository(self.mock_db)
-                user = await repository.update(self.mock_user.id,modified_user)
-
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once()
-
-        assert user is not None
-        assert user.id == self.mock_user.id
-        assert user.username == modified_user.username
-        assert user.email == modified_user.email
-        assert user.hashed_password == modified_user.hashed_password
-
-    @pytest.mark.asyncio
-    async def test_update_wrong_user(self):
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-        
-        modified_user = User(
-            id=self.mock_user.id,
-            username='other',
-            email='other@gmail.com',
-            hashed_password='new password'
-        )
-        
-        def instance_to_dict(instance:User) -> dict:
-            return {
-                'id':instance.id,
-                'username':instance.username,
-                'email':instance.email,
-                'hashed_password':instance.hashed_password
-            }
-
-        async def mock_refresh(instance):
-            instance.username = modified_user.username
-            instance.email = modified_user.email
-            instance.hashed_password = modified_user.hashed_password
-
-        self.mock_db.refresh.side_effect = mock_refresh
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=None):
-            with patch('repositories.user.UserRepository._instance_to_dict',return_value=instance_to_dict(modified_user)):
-                repository = UserRepository(self.mock_db)
-                user = await repository.update('wrong_id',modified_user)
-
-        assert user is None
-
-    @pytest.mark.asyncio
-    async def test_delete_user(self):
-        self.mock_db.delete = AsyncMock()
-        self.mock_db.commit = AsyncMock()
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            repository = UserRepository(self.mock_db)
-            result = await repository.delete(self.mock_user.id)
-        
-        self.mock_db.delete.assert_awaited_once()
-        self.mock_db.commit.assert_awaited_once()
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.id =' in query
+        mocked_db.delete.assert_awaited_once_with(db_mocked_user)
+        mocked_db.commit.assert_awaited_once()
 
         assert result == True
 
     @pytest.mark.asyncio
-    async def test_delete_wrong_user(self):
-        with patch('repositories.user.UserRepository.get_by_id',return_value=None):
-            repository = UserRepository(self.mock_db)
-            result = await repository.delete('wrong_id')
+    async def test_delete_wrong_user(
+        self,
+        mocked_db,
+        mocked_get_execute_result
+    ):
         
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = None
+        
+        repository = UserRepository(mocked_db)
+        result = await repository.delete('wrong_id')
+
+        mocked_db.execute.assert_awaited_once()
+        query = str(mocked_db.execute.await_args[0][0])
+        assert 'SELECT' in query
+        assert 'WHERE users.id =' in query
         assert result == False
-
-    @pytest.mark.asyncio
-    async def test_get_users(self):
-        with patch('repositories.user.UserRepository.get_instances',return_value=[self.mock_user]):
-            repository = UserRepository(self.mock_db)
-            result = await repository.get_instances()
-
-            assert len(result) == 1
-            assert result[0] is not None
-            assert result[0].id == self.mock_user.id
-            assert result[0].username == self.mock_user.username
-            assert result[0].email == self.mock_user.email
-            assert result[0].hashed_password == self.mock_user.hashed_password

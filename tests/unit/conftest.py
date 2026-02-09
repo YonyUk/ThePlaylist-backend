@@ -1,3 +1,4 @@
+from typing import Tuple
 import pytest
 import pytest_asyncio
 import dotenv
@@ -5,6 +6,7 @@ import os
 import asyncio
 from httpx import AsyncClient
 from asgi_lifespan import LifespanManager 
+from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import create_async_engine,AsyncSession,async_sessionmaker
 from settings import ENVIRONMENT
 from unittest.mock import AsyncMock,MagicMock
@@ -101,8 +103,34 @@ async def async_client(db_test_session):
     
     app.dependency_overrides.clear()
 
-########### Fixtures for Unit Test of UserRepository #################
+# fixture for database:AsyncSession on unit tests of repositories
+@pytest_asyncio.fixture
+async def mocked_db():
+    return AsyncMock(spec=AsyncSession)
 
+@pytest_asyncio.fixture
+async def mocked_get_execute_result():
+    return AsyncMock(spec=Result[Tuple[User]])
+
+@pytest_asyncio.fixture
+async def db_mocked_user():
+    return User(
+        id='user_id',
+        username='user',
+        email='user@gmail.com',
+        hashed_password='hashed_password'
+    )
+
+@pytest_asyncio.fixture
+async def db_mocked_update_user(db_mocked_user):
+    return User(
+        id=db_mocked_user.id,
+        username='new username',
+        email='modified@gmail.com',
+        hashed_password='new hashed_password'
+    )
+
+# fixture for unit tests with UserRepository already mocked
 @pytest_asyncio.fixture
 async def mocked_user_repository():
     return AsyncMock(spec=UserRepository)
