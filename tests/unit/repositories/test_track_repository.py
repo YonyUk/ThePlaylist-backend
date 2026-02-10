@@ -281,13 +281,13 @@ class TestTrackRepository:
         
         match reaction_type:
             case 'like':
-                db_mocked_track.users_likes.append.assert_called_once()
+                db_mocked_track.users_likes.append.assert_called_once_with(db_user)
                 
             case 'dislike':
-                db_mocked_track.users_dislikes.append.assert_called_once()
+                db_mocked_track.users_dislikes.append.assert_called_once_with(db_user)
 
             case 'love':
-                db_mocked_track.users_loves.append.assert_called_once()
+                db_mocked_track.users_loves.append.assert_called_once_with(db_user)
 
         mocked_db.commit.assert_awaited_once()
         mocked_db.refresh.assert_awaited_once_with(db_mocked_track)

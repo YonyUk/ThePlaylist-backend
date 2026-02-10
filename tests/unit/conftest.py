@@ -117,6 +117,11 @@ async def mocked_get_execute_result():
 async def mocked_user_repository():
     return AsyncMock(spec=UserRepository)
 
+# fixture for unit tests with TrackRepository
+@pytest_asyncio.fixture
+async def mocked_track_repository():
+    return AsyncMock(spec=TrackRepository)
+
 @pytest_asyncio.fixture
 async def mocked_user():
     return User(
