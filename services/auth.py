@@ -90,4 +90,4 @@ class AuthService:
         user = await self._user_repository.get_by_name(username)
         if not user:
             raise credentials_exception
-        return user
+        return UserSchema.model_validate(user)
