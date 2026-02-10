@@ -1,31 +1,70 @@
 import pytest
-from unittest.mock import AsyncMock,MagicMock,patch
+import pytest_asyncio
+from unittest.mock import AsyncMock,MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models import Track,User
-from repositories import TrackRepository,UserRepository
+from repositories import TrackRepository
 
 class TestTrackRepository:
 
-    mock_db = AsyncMock(spec=AsyncSession)
-    mock_track = Track(
-        file_id='file_id',
-        content_hash='content_hash',
-        name='new track',
-        author_name='me',
-        size='4 Mb',
-        likes=0,
-        dislikes=0,
-        loves=0,
-        plays=0,
-        uploaded_by='me'
-    )
-    mock_user = User(
-        id='user_id',
-        username='username',
-        email='user@gmail.com',
-        hashed_password='hashed_password'
-    )
+    def assert_has_selectinload_option(self,query):
+        if hasattr(query,'_with_options') and query._with_options:
+            selectinload_option = list(filter(
+                lambda option: 'load' in str(option).lower(),
+                query._with_options
+            ))
+            assert len(selectinload_option) != 0
+
+    @pytest_asyncio.fixture
+    async def db_mocked_track(self,db_track):
+        track = MagicMock()
+        track.id.return_value = db_track.id
+        track.users_likes = MagicMock()
+        track.users_dislikes = MagicMock()
+        track.users_loves = MagicMock()
+        return track
+
+    @pytest_asyncio.fixture
+    async def db_track(self):
+        return Track(
+            id='track_id',
+            file_id='file_id',
+            content_hash='content_hash',
+            name='new track',
+            author_name='me',
+            size='4 Mb',
+            likes=0,
+            dislikes=0,
+            loves=0,
+            plays=0,
+            uploaded_by='me'
+        )
+
+    @pytest_asyncio.fixture
+    async def db_update_track(self,db_track):
+        return Track(
+            id=db_track.id,
+            file_id='file_id',
+            content_hash='new content_hash',
+            name='new new track',
+            author_name='me',
+            size='5 Mb',
+            likes=1,
+            dislikes=1,
+            loves=1,
+            plays=1,
+            uploaded_by='me'
+        )
+
+    @pytest_asyncio.fixture
+    async def db_user(self):
+        return User(
+            id='user_id',
+            username='username',
+            email='user@gmail.com',
+            hashed_password='hashed_password'
+        )
 
     def assert_tracks_equals(self,track_result:Track | None,track_base:Track):
         assert track_result is not None
@@ -46,7 +85,7 @@ class TestTrackRepository:
         self,
         mocked_db,
         mocked_get_execute_result,
-        db_mocked_track,
+        db_track,
         mocked_user_repository
     ):
         
@@ -55,7 +94,7 @@ class TestTrackRepository:
 
         repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        track = await repository.create(db_mocked_track)
+        track = await repository.create(db_track)
         
         assert mocked_db.execute.await_count == 2
         for call in mocked_db.execute.await_args_list:
@@ -69,32 +108,32 @@ class TestTrackRepository:
         assert len(list(id_query)) == 1
         assert len(list(content_hash_query)) == 1
 
-        mocked_db.add.assert_called_once_with(db_mocked_track)
+        mocked_db.add.assert_called_once_with(db_track)
         mocked_db.commit.assert_awaited_once()
-        mocked_db.refresh.assert_awaited_once_with(db_mocked_track)
-        self.assert_tracks_equals(track,db_mocked_track)        
+        mocked_db.refresh.assert_awaited_once_with(db_track)
+        self.assert_tracks_equals(track,db_track)        
     
     @pytest.mark.asyncio
     async def test_get_track_by_id(
         self,
         mocked_db,
         mocked_get_execute_result,
-        db_mocked_track,
+        db_track,
         mocked_user_repository
     ):
         
         mocked_db.execute.return_value = mocked_get_execute_result
-        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_track
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_track
 
         repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        track = await repository.get_by_id(db_mocked_track.id)
+        track = await repository.get_by_id(db_track.id)
         
         mocked_db.execute.assert_awaited_once()
         query = str(mocked_db.execute.await_args[0][0])
         assert 'SELECT' in query
         assert 'WHERE tracks.id =' in query
-        self.assert_tracks_equals(track,db_mocked_track)
+        self.assert_tracks_equals(track,db_track)
     
     @pytest.mark.asyncio
     async def test_get_track_by_wrong_id(
@@ -121,12 +160,12 @@ class TestTrackRepository:
         self,
         mocked_db,
         mocked_get_execute_result,
-        db_mocked_track,
-        db_mocked_update_track,
+        db_track,
+        db_update_track,
         mocked_user_repository,
     ):
 
-        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_track
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_track
 
         async def mock_execute(query):
             if 'SELECT' in str(query):
@@ -136,22 +175,22 @@ class TestTrackRepository:
         mocked_db.execute.side_effect = mock_execute
         
         async def mock_refresh(instance):
-            instance.file_id = db_mocked_update_track.file_id
-            instance.content_hash = db_mocked_update_track.content_hash
-            instance.name = db_mocked_update_track.name
-            instance.author_name = db_mocked_update_track.author_name
-            instance.size = db_mocked_update_track.size
-            instance.likes = db_mocked_update_track.likes
-            instance.dislikes = db_mocked_update_track.dislikes
-            instance.loves = db_mocked_update_track.loves
-            instance.plays = db_mocked_update_track.plays
-            instance.uploaded_by = db_mocked_update_track.uploaded_by
+            instance.file_id = db_update_track.file_id
+            instance.content_hash = db_update_track.content_hash
+            instance.name = db_update_track.name
+            instance.author_name = db_update_track.author_name
+            instance.size = db_update_track.size
+            instance.likes = db_update_track.likes
+            instance.dislikes = db_update_track.dislikes
+            instance.loves = db_update_track.loves
+            instance.plays = db_update_track.plays
+            instance.uploaded_by = db_update_track.uploaded_by
 
         mocked_db.refresh.side_effect = mock_refresh
         
         repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        track = await repository.update(db_mocked_track.id,db_mocked_update_track)
+        track = await repository.update(db_track.id,db_update_track)
         
         assert mocked_db.execute.await_count == 2
         calls = list(map(lambda call: str(call[0][0]),mocked_db.execute.await_args_list))
@@ -160,30 +199,30 @@ class TestTrackRepository:
         assert len(list(id_query)) == 1
         assert len(list(update_query)) == 1
         mocked_db.commit.assert_awaited_once()
-        mocked_db.refresh.assert_awaited_once_with(db_mocked_track)
-        self.assert_tracks_equals(track,db_mocked_update_track)
+        mocked_db.refresh.assert_awaited_once_with(db_track)
+        self.assert_tracks_equals(track,db_update_track)
 
     @pytest.mark.asyncio
     async def test_delete_track(
         self,
         mocked_db,
         mocked_get_execute_result,
-        db_mocked_track,
+        db_track,
         mocked_user_repository
     ):
         
         mocked_db.execute.return_value = mocked_get_execute_result
-        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_track
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_track
 
         repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        result = await repository.delete(db_mocked_track.id)
+        result = await repository.delete(db_track.id)
         
         mocked_db.execute.assert_awaited_once()
         query = str(mocked_db.execute.await_args[0][0])
         assert 'SELECT' in query
         assert 'WHERE tracks.id =' in query
-        mocked_db.delete.assert_awaited_once_with(db_mocked_track)
+        mocked_db.delete.assert_awaited_once_with(db_track)
         mocked_db.commit.assert_awaited_once()
         assert result == True
     
@@ -192,7 +231,7 @@ class TestTrackRepository:
         self,
         mocked_db,
         mocked_get_execute_result,
-        db_mocked_track,
+        db_track,
         mocked_user_repository
     ):
         
@@ -201,186 +240,105 @@ class TestTrackRepository:
 
         repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        result = await repository.delete(db_mocked_track.id)
+        result = await repository.delete(db_track.id)
         mocked_db.execute.assert_awaited_once()
         query = str(mocked_db.execute.await_args[0][0])
         assert 'SELECT' in query
         assert 'WHERE tracks.id =' in query
         assert result == False
 
-    @pytest.mark.asyncio
-    async def test_add_like_from_user_to_track(self):
+    @pytest.mark.parametrize('reaction_type,method_name',[
+        ('like','add_like_from_user_to_track'),
+        ('dislike','add_dislike_from_user_to_track'),
+        ('love','add_love_from_user_to_track')
+    ])
+    async def test_add_reaction_from_user_to_track(
+        self,
+        reaction_type,
+        method_name,
+        mocked_db,
+        db_mocked_track,
+        mocked_get_execute_result,
+        db_user,
+        mocked_user_repository
+    ):
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_track
 
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_likes = MagicMock()
-        mock_track.users_likes.append = MagicMock()
+        mocked_user_repository.get_by_id.return_value = db_user
 
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
+        repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
+        method = getattr(repository,method_name)
 
-            result = await repository.add_like_from_user_to_track(self.mock_user.id,mock_track.id)
+        result = await method(db_user.id,db_mocked_track.id)
+
+        mocked_db.execute.awaited_once()
+        raw_query = mocked_db.execute.await_args[0][0]
+        query = str(raw_query)
+        assert 'SELECT' in query
+        assert 'WHERE tracks.id =' in query
+        self.assert_has_selectinload_option(raw_query)
         
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_likes.append.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
+        match reaction_type:
+            case 'like':
+                db_mocked_track.users_likes.append.assert_called_once()
+                
+            case 'dislike':
+                db_mocked_track.users_dislikes.append.assert_called_once()
 
-        assert result == True
-    
-    @pytest.mark.asyncio
-    async def test_remove_like_from_user_to_track(self):
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_like = MagicMock()
-        mock_track.users_like.remove = MagicMock()
+            case 'love':
+                db_mocked_track.users_loves.append.assert_called_once()
 
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
-
-            result = await repository.remove_like_from_user_to_track(self.mock_user.id,mock_track.id)
-        
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_likes.remove.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
+        mocked_db.commit.assert_awaited_once()
+        mocked_db.refresh.assert_awaited_once_with(db_mocked_track)
 
         assert result == True
 
-    @pytest.mark.asyncio
-    async def test_add_dislike_from_user_to_track(self):
+    @pytest.mark.parametrize('reaction_type,method_name',[
+        ('like','remove_like_from_user_to_track'),
+        ('dislike','remove_dislike_from_user_to_track'),
+        ('love','remove_love_from_user_to_track')
+    ])
+    async def test_remove_reaction_from_user_to_track(
+        self,
+        reaction_type,
+        method_name,
+        mocked_db,
+        db_mocked_track,
+        mocked_get_execute_result,
+        db_user,
+        mocked_user_repository
+    ):
+        mocked_db.execute.return_value = mocked_get_execute_result
+        mocked_get_execute_result.scalar_one_or_none.return_value = db_mocked_track
 
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_dislikes = MagicMock()
-        mock_track.users_dislikes.append = MagicMock()
+        mocked_user_repository.get_by_id.return_value = db_user
 
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
+        repository = TrackRepository(mocked_db,mocked_user_repository)
 
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
-
-            result = await repository.add_dislike_from_user_to_track(self.mock_user.id,mock_track.id)
+        method = getattr(repository,method_name)
         
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_dislikes.append.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
+        result = await method(db_user.id,db_mocked_track.id)
 
-        assert result == True
-    
-    @pytest.mark.asyncio
-    async def test_remove_dislike_from_user_to_track(self):
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_dislike = MagicMock()
-        mock_track.users_dislike.remove = MagicMock()
+        mocked_db.execute.assert_awaited_once()
+        raw_query = mocked_db.execute.await_args[0][0]
+        query = str(raw_query)
+        assert 'SELECT' in query
+        assert 'WHERE tracks.id =' in query
+        self.assert_has_selectinload_option(raw_query)
 
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
+        match reaction_type:
+            case 'like':
+                db_mocked_track.users_likes.remove.assert_called_once_with(db_user)
+                
+            case 'dislike':
+                db_mocked_track.users_dislikes.remove.assert_called_once_with(db_user)
 
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
+            case 'love':
+                db_mocked_track.users_loves.remove.assert_called_once_with(db_user)
 
-            result = await repository.remove_dislike_from_user_to_track(self.mock_user.id,mock_track.id)
-        
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_dislikes.remove.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
-
-        assert result == True
-    
-    @pytest.mark.asyncio
-    async def test_add_love_from_user_to_track(self):
-
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_loves = MagicMock()
-        mock_track.users_loves.append = MagicMock()
-
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
-
-            result = await repository.add_love_from_user_to_track(self.mock_user.id,mock_track.id)
-        
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_loves.append.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
-
-        assert result == True
-    
-    @pytest.mark.asyncio
-    async def test_remove_love_from_user_to_track(self):
-        mock_track = MagicMock()
-        mock_track.id = 'track_id'
-        mock_track.users_loves = MagicMock()
-        mock_track.users_loves.remove = MagicMock()
-
-        mock_execute_result = MagicMock()
-        mock_execute_result.scalar_one_or_none.return_value = mock_track
-        execute = AsyncMock()
-        execute.return_value = mock_execute_result
-        self.mock_db.execute = execute
-        self.mock_db.commit = AsyncMock()
-        self.mock_db.refresh = AsyncMock()
-
-        with patch('repositories.user.UserRepository.get_by_id',return_value=self.mock_user):
-            user_repository = UserRepository(self.mock_db)
-            repository = TrackRepository(self.mock_db,user_repository)
-
-            result = await repository.remove_love_from_user_to_track(self.mock_user.id,mock_track.id)
-        
-        self.mock_db.execute.assert_awaited_once()
-        mock_execute_result.scalar_one_or_none.assert_called_once()
-        mock_track.users_loves.remove.assert_called_once_with(self.mock_user)
-        self.mock_db.commit.assert_awaited_once()
-        self.mock_db.refresh.assert_awaited_once_with(mock_track)
+        mocked_db.commit.assert_awaited_once()
+        mocked_db.refresh.assert_awaited_once_with(db_mocked_track)
 
         assert result == True
