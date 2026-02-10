@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from unittest.mock import MagicMock
 
 from models import Playlist,User,Track
@@ -25,8 +24,8 @@ class TestPlaylistRepository:
         assert playlist_result.plays == playlist_base.plays
         assert playlist_result.loves == playlist_base.loves
 
-    @pytest_asyncio.fixture
-    async def db_mocked_playlist(self,db_playlist):
+    @pytest.fixture
+    def db_mocked_playlist(self,db_playlist):
         playlist = MagicMock()
         playlist.id.return_value = db_playlist.id
         playlist.users_likes = MagicMock()
@@ -35,8 +34,8 @@ class TestPlaylistRepository:
         playlist.tracks = MagicMock()
         return playlist
 
-    @pytest_asyncio.fixture
-    async def db_playlist(self):
+    @pytest.fixture
+    def db_playlist(self):
         return Playlist(
             id='playlist_id',
             name='my playlist',
@@ -47,8 +46,8 @@ class TestPlaylistRepository:
             description='description'
         )
     
-    @pytest_asyncio.fixture
-    async def db_update_playlist(self,db_playlist):
+    @pytest.fixture
+    def db_update_playlist(self,db_playlist):
         return Playlist(
             id=db_playlist.id,
             name='my new playlist',
@@ -59,8 +58,8 @@ class TestPlaylistRepository:
             description='new description'
         )
 
-    @pytest_asyncio.fixture
-    async def db_user(self):
+    @pytest.fixture
+    def db_user(self):
         return User(
             id='user_id',
             username='username',
@@ -68,8 +67,8 @@ class TestPlaylistRepository:
             hashed_password='hashed_password'
         )
 
-    @pytest_asyncio.fixture
-    async def db_track(self):
+    @pytest.fixture
+    def db_track(self):
         return Track(
             id='track_id',
             file_id='file_id',

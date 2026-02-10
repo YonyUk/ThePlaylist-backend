@@ -12,8 +12,8 @@ class TestUserRepository:
         assert user_result.email == user_base.email
         assert user_result.hashed_password == user_base.hashed_password
 
-    @pytest_asyncio.fixture
-    async def db_user(self):
+    @pytest.fixture
+    def db_user(self):
         return User(
             id='user_id',
             username='user',
@@ -21,8 +21,8 @@ class TestUserRepository:
             hashed_password='hashed_password'
         )
 
-    @pytest_asyncio.fixture
-    async def db_update_user(self,db_user):
+    @pytest.fixture
+    def db_update_user(self,db_user):
         return User(
             id=db_user.id,
             username='new username',

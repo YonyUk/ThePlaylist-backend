@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 from unittest.mock import MagicMock
 
 from models import Track,User
@@ -15,8 +14,8 @@ class TestTrackRepository:
             ))
             assert len(selectinload_option) != 0
 
-    @pytest_asyncio.fixture
-    async def db_mocked_track(self,db_track):
+    @pytest.fixture
+    def db_mocked_track(self,db_track):
         track = MagicMock()
         track.id.return_value = db_track.id
         track.users_likes = MagicMock()
@@ -24,8 +23,8 @@ class TestTrackRepository:
         track.users_loves = MagicMock()
         return track
 
-    @pytest_asyncio.fixture
-    async def db_track(self):
+    @pytest.fixture
+    def db_track(self):
         return Track(
             id='track_id',
             file_id='file_id',
@@ -40,8 +39,8 @@ class TestTrackRepository:
             uploaded_by='me'
         )
 
-    @pytest_asyncio.fixture
-    async def db_update_track(self,db_track):
+    @pytest.fixture
+    def db_update_track(self,db_track):
         return Track(
             id=db_track.id,
             file_id='file_id',
@@ -56,8 +55,8 @@ class TestTrackRepository:
             uploaded_by='me'
         )
 
-    @pytest_asyncio.fixture
-    async def db_user(self):
+    @pytest.fixture
+    def db_user(self):
         return User(
             id='user_id',
             username='username',
@@ -272,7 +271,7 @@ class TestTrackRepository:
 
         result = await method(db_user.id,db_mocked_track.id)
 
-        mocked_db.execute.awaited_once()
+        mocked_db.execute.assert_awaited_once()
         raw_query = mocked_db.execute.await_args[0][0]
         query = str(raw_query)
         assert 'SELECT' in query
