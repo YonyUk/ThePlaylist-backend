@@ -112,24 +112,6 @@ async def mocked_db():
 async def mocked_get_execute_result():
     return AsyncMock(spec=Result[Tuple])
 
-@pytest_asyncio.fixture
-async def db_mocked_user():
-    return User(
-        id='user_id',
-        username='user',
-        email='user@gmail.com',
-        hashed_password='hashed_password'
-    )
-
-@pytest_asyncio.fixture
-async def db_mocked_update_user(db_mocked_user):
-    return User(
-        id=db_mocked_user.id,
-        username='new username',
-        email='modified@gmail.com',
-        hashed_password='new hashed_password'
-    )
-
 # fixture for unit tests with UserRepository already mocked
 @pytest_asyncio.fixture
 async def mocked_user_repository():

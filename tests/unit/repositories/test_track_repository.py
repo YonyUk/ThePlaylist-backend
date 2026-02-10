@@ -1,7 +1,6 @@
 import pytest
 import pytest_asyncio
-from unittest.mock import AsyncMock,MagicMock
-from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import MagicMock
 
 from models import Track,User
 from repositories import TrackRepository
