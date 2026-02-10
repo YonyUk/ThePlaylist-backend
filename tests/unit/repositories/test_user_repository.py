@@ -1,7 +1,4 @@
 import pytest
-from unittest.mock import AsyncMock,MagicMock,patch
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from models import User
 from repositories import UserRepository
 
@@ -31,7 +28,6 @@ class TestUserRepository:
         assert mocked_db.execute.await_count == 3
         for call in mocked_db.execute.await_args_list:
             query = str(call[0][0])
-            print(query)
             assert 'SELECT' in query
         
         calls = list(map(lambda call:str(call[0][0]),mocked_db.execute.await_args_list))
@@ -190,7 +186,7 @@ class TestUserRepository:
         assert mocked_db.execute.await_count == 2
         calls = list(map(lambda call:str(call[0][0]),mocked_db.execute.await_args_list))
         select_query = filter(lambda query: 'SELECT' in query,calls)
-        update_query = filter(lambda query: 'UPDATE' in query,calls)
+        update_query = filter(lambda query: 'UPDATE' in query and 'WHERE users.id =' in query,calls)
         assert len(list(select_query)) == 1
         assert len(list(update_query)) == 1
         mocked_db.commit.assert_awaited_once()

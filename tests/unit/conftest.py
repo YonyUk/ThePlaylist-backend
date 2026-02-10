@@ -110,7 +110,7 @@ async def mocked_db():
 
 @pytest_asyncio.fixture
 async def mocked_get_execute_result():
-    return AsyncMock(spec=Result[Tuple[User]])
+    return AsyncMock(spec=Result[Tuple])
 
 @pytest_asyncio.fixture
 async def db_mocked_user():
@@ -128,6 +128,38 @@ async def db_mocked_update_user(db_mocked_user):
         username='new username',
         email='modified@gmail.com',
         hashed_password='new hashed_password'
+    )
+
+@pytest_asyncio.fixture
+async def db_mocked_track():
+    return Track(
+        id='track_id',
+        file_id='file_id',
+        content_hash='content_hash',
+        name='new track',
+        author_name='me',
+        size='4 Mb',
+        likes=0,
+        dislikes=0,
+        loves=0,
+        plays=0,
+        uploaded_by='me'
+    )
+
+@pytest_asyncio.fixture
+async def db_mocked_update_track(db_mocked_track):
+    return Track(
+        id=db_mocked_track.id,
+        file_id='file_id',
+        content_hash='new content_hash',
+        name='new new track',
+        author_name='me',
+        size='5 Mb',
+        likes=1,
+        dislikes=1,
+        loves=1,
+        plays=1,
+        uploaded_by='me'
     )
 
 # fixture for unit tests with UserRepository already mocked
