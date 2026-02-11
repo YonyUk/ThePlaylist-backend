@@ -1,5 +1,7 @@
 from typing import Tuple
 import pytest
+from _pytest.logging import LogCaptureFixture
+import logging
 import pytest_asyncio
 import dotenv
 import os
@@ -21,7 +23,7 @@ db_test_url = f'{ENVIRONMENT.DB_USER}:{ENVIRONMENT.DB_PASSWORD}@{ENVIRONMENT.DB_
 
 DB_ENGINE = ENVIRONMENT.DB_ENGINE
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture
 async def async_client():
     '''
     Docstring for async_client
@@ -65,6 +67,29 @@ async def async_client():
 
     await engine.dispose()
 
+# fixture to save the faileds tests into a file
+@pytest.hookimpl(tryfirst=True,hookwrapper=True)
+def pytest_runtest_makereport(item,call):
+    outcome = yield
+    report = outcome.get_result()
+    if report.when == 'call':
+        setattr(item,'rep_call',report)
+
+@pytest.fixture(autouse=True)
+def log_on_failure(request,caplog:LogCaptureFixture):
+    caplog.set_level(logging.DEBUG)
+    yield
+
+    if hasattr(request.node,'rep_call'):
+        report = request.node.rep_call
+        if report.failed:
+            log_text = report.longreprtext
+            test_name = request.node.name
+            filename = f'logs_failed_{test_name}.log'
+            with open(filename,'a',encoding='utf-8') as f:
+                f.write(f"========== Test's logs failed: {test_name} ==========\n")
+                f.write(log_text)
+                f.write('\n\n')
 
 # fixture for database:AsyncSession on unit tests of repositories
 @pytest.fixture

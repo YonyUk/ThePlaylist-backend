@@ -162,6 +162,7 @@ class Settings:
             'DELETE_TRACK_TIMEOUT',
             'max time to wait for delete a track'
         ))
+        self._log_file:str = os.getenv('LOG_FILE','file to save errors log')
 
     def _get_boolean(self,value:str) -> bool:
         value = value.strip().lower()
@@ -174,6 +175,10 @@ class Settings:
         if not cls._instance:
             cls._instance = Settings()
         return cls._instance
+    
+    @property
+    def LOG_FILE(self) -> str:
+        return self._log_file
     
     @property
     def DELETE_TRACK_TIMEOUT(self) -> int:
