@@ -94,20 +94,25 @@ async def async_client(db_test_session):
     app.dependency_overrides.clear()
 
 # fixture for database:AsyncSession on unit tests of repositories
-@pytest_asyncio.fixture
-async def mocked_db():
+@pytest.fixture
+def mocked_db():
     return AsyncMock(spec=AsyncSession)
 
-@pytest_asyncio.fixture
-async def mocked_get_execute_result():
+@pytest.fixture
+def mocked_get_execute_result():
     return AsyncMock(spec=Result[Tuple])
 
 # fixture for unit tests with UserRepository already mocked
-@pytest_asyncio.fixture
-async def mocked_user_repository():
+@pytest.fixture
+def mocked_user_repository():
     return AsyncMock(spec=UserRepository)
 
 # fixture for unit tests with TrackRepository
-@pytest_asyncio.fixture
-async def mocked_track_repository():
+@pytest.fixture
+def mocked_track_repository():
     return AsyncMock(spec=TrackRepository)
+
+# fixture for unit tests with PlaylistRepository
+@pytest.fixture
+def mocked_playlist_repository():
+    return AsyncMock(spec=PlaylistRepository)

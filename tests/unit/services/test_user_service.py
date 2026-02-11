@@ -21,10 +21,10 @@ class TestUserService:
         )
     
     @pytest.fixture
-    def user_create(self):
+    def user_create(self,db_user):
         return UserCreateSchema(
-            username='username',
-            email='user@gmail.com',
+            username=db_user.username,
+            email=db_user.email,
             password='my_password'
         )
 
