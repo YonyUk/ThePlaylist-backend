@@ -21,7 +21,7 @@ db_test_url = f'{ENVIRONMENT.DB_USER}:{ENVIRONMENT.DB_PASSWORD}@{ENVIRONMENT.DB_
 
 DB_ENGINE = ENVIRONMENT.DB_ENGINE
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture()
 async def async_client():
     '''
     Docstring for async_client
