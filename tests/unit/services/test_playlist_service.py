@@ -32,38 +32,6 @@ class TestPlaylistService:
         assert len(result_tracks.difference(base_tracks)) == 0
         assert len(base_tracks.difference(result_tracks)) == 0
     
-    def assert_playlist_equals_after_update(
-        self,
-        playlist_result:PlaylistSchema | None,
-        playlist_base: PlaylistSchema
-    ):
-        assert playlist_result is not None
-        assert playlist_result.likes == playlist_base.likes
-        assert playlist_result.dislikes == playlist_base.dislikes
-        assert playlist_result.loves == playlist_base.loves
-        assert playlist_result.plays == playlist_base.plays
-
-        result_tracks = set(map(lambda track:track.id,playlist_result.tracks))
-        base_tracks = set(map(lambda track:track.id,playlist_base.tracks))
-
-        assert len(result_tracks.difference(base_tracks)) == 0
-        assert len(base_tracks.difference(result_tracks)) == 0
-
-    def assert_playlist_equals_after_private_update(
-        self,
-        playlist_result:PlaylistSchema | None,
-        playlist_base:PlaylistSchema
-    ):
-        assert playlist_result is not None
-        assert playlist_result.name == playlist_base.name
-        assert playlist_result.description == playlist_base.description
-
-        result_tracks = set(map(lambda track:track.id,playlist_result.tracks))
-        base_tracks = set(map(lambda track:track.id,playlist_base.tracks))
-
-        assert len(result_tracks.difference(base_tracks)) == 0
-        assert len(base_tracks.difference(result_tracks)) == 0
-
     @pytest.fixture
     def user_id(self):
         return 'user_id'
@@ -114,15 +82,15 @@ class TestPlaylistService:
     def playlist_updated(self,db_playlist,playlist_update):
         return PlaylistSchema(
             id=db_playlist.id,
-            name='my playlist',
-            description=None,
+            name=db_playlist.name,
+            description=db_playlist.description,
             likes=playlist_update.likes,
             dislikes=playlist_update.dislikes,
             loves=playlist_update.loves,
             plays=playlist_update.plays,
             author=db_playlist.author,
             author_id=db_playlist.author_id,
-            tracks=[]
+            tracks=db_playlist.tracks
         )
     
     @pytest.fixture
@@ -131,13 +99,13 @@ class TestPlaylistService:
             id=db_playlist.id,
             name=playlist_private_update.name,
             description=playlist_private_update.description,
-            likes=0,
-            dislikes=0,
-            loves=0,
-            plays=0,
+            likes=db_playlist.likes,
+            dislikes=db_playlist.dislikes,
+            loves=db_playlist.loves,
+            plays=db_playlist.plays,
             author=db_playlist.author,
             author_id=db_playlist.author_id,
-            tracks=[]
+            tracks=db_playlist.tracks
         )
 
     @pytest.mark.asyncio
@@ -202,7 +170,7 @@ class TestPlaylistService:
 
         mocked_playlist_repository.get_by_id.assert_awaited_once_with(db_playlist.id)
         mocked_playlist_repository.update.assert_awaited_once()
-        self.assert_playlist_equals_after_update(playlist,playlist_updated)
+        self.assert_playlists_equals(playlist,playlist_updated)
     
     @pytest.mark.asyncio
     async def test_private_update(
@@ -221,7 +189,7 @@ class TestPlaylistService:
 
         mocked_playlist_repository.get_by_id.assert_awaited_once_with(db_playlist.id)
         mocked_playlist_repository.update.assert_awaited_once()
-        self.assert_playlist_equals_after_private_update(playlist,playlist_private_updated)
+        self.assert_playlists_equals(playlist,playlist_private_updated)
     
     @pytest.mark.asyncio
     async def test_delete_playlist(
