@@ -38,6 +38,17 @@ class TestUserEndpoints:
             ]
         )))
 
+    async def log_user(self,client:AsyncClient,user: UserCreateSchema) -> UserSchema | None:
+        user_created = await self.create_user(client,user)
+        if user_created is not None:
+            response = await client.post('users/token',data={
+                'username':user.username,
+                'password':user.password
+            })
+            if response.status_code == 201:
+                return user_created
+        return None
+
     @pytest.fixture
     def users_count(self):
         return 10
@@ -138,15 +149,9 @@ class TestUserEndpoints:
         user_create:UserCreateSchema,
         user_update:UserUpdateSchema
     ):
-        response:Response = await async_client.post('users/register',json=user_create.model_dump())
-        assert response.status_code == 201
-        user_response = UserSchema(**response.json())
-        response = await async_client.post('users/token',data={
-            'username':user_create.username,
-            'password':user_create.password
-        })
-        assert response.status_code == 201
-        response = await async_client.put(f'users/{user_response.id}',json=user_update.model_dump())
+        user_logged = await self.log_user(async_client,user_create)
+        assert user_logged is not None
+        response = await async_client.put(f'users/{user_logged.id}',json=user_update.model_dump())
         assert response.status_code == 202
         user_response = UserSchema(**response.json())
         self.assert_users_equals(user_response,user_update)
@@ -157,21 +162,46 @@ class TestUserEndpoints:
         async_client:AsyncClient,
         user_create:UserCreateSchema
     ):
-        response:Response = await async_client.post('users/register',json=user_create.model_dump())
-        assert response.status_code == 201
-        user_response = UserSchema(**response.json())
-        response = await async_client.post('users/token',data={
-            'username':user_create.username,
-            'password':user_create.password
-        })
-        assert response.status_code == 201
-        response = await async_client.delete(f'users/{user_response.id}')
+        user_logged = await self.log_user(async_client,user_create)
+        assert user_logged is not None
+        response = await async_client.delete(f'users/{user_logged.id}')
         assert response.status_code == 202
     
-    # @pytest.mark.asyncio
-    # async def test_get_me_info(
-    #     self,
-    #     async_client:AsyncClient,
-    #     user_create:UserCreateSchema
-    # ):
-    #     response:Response = 
+    @pytest.mark.asyncio
+    async def test_get_me_info(
+        self,
+        async_client:AsyncClient,
+        user_create:UserCreateSchema
+    ):
+        user_logged = await self.log_user(async_client,user_create)
+        assert user_logged is not None
+        response = await async_client.get('users/me')
+        assert response.status_code == 200
+        user_response = UserSchema(**response.json())
+        self.assert_users_equals(user_response,user_logged)
+    
+    @pytest.mark.asyncio
+    async def test_logout(
+        self,
+        async_client:AsyncClient,
+        user_create:UserCreateSchema
+    ):
+        user_logged = await self.log_user(async_client,user_create)
+        assert user_logged is not None
+        response = await async_client.post('users/logout')
+        assert response.status_code == 200
+    
+    @pytest.mark.asyncio
+    async def test_verify(
+        self,
+        async_client:AsyncClient,
+        user_create:UserCreateSchema
+    ):
+        user_logged = await self.log_user(async_client,user_create)
+        assert user_logged is not None
+        response = await async_client.get('users/verify')
+        assert response.status_code == 200
+        response_data = response.json()
+        user = UserSchema(**response_data['user'])
+        assert response_data['authenticated'] == True
+        self.assert_users_equals(user,user_logged)
