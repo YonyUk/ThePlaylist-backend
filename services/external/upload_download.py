@@ -39,30 +39,31 @@ class FileValidationResult:
         return self._extension
 
 class BackBlazeB2Service:
-    def __init__(self):
+    def __init__(self,testing=False):
         '''
         Docstring for __init__
         
         service to use BackBlazeB2 cloud-storage platform
         '''
         mimetypes.add_type("audio/x-m4a",'.m4a')
-        try:
-            self._info = InMemoryAccountInfo()
-            self._api = B2Api(self._info) # type: ignore
-            self._api.authorize_account(
-                'production',
-                ENVIRONMENT.BACKBLAZEB2_AWS_ACCESS_KEY_ID,
-                ENVIRONMENT.BACKBLAZEB2_AWS_SECRET_ACCESS_KEY
-            )
-            self._bucket = self._api.get_bucket_by_id(
-                ENVIRONMENT.BACKBLAZEB2_BUCKET_ID
-            )
-        except Exception as ex:
-            logger.error(f'Can not acces to backblazeb2 service: {ex}')
-            raise HTTPException(
-                status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                detail='Can not connect to backblazeb2 service'
-            )
+        if not testing:
+            try:
+                self._info = InMemoryAccountInfo()
+                self._api = B2Api(self._info) # type: ignore
+                self._api.authorize_account(
+                    'production',
+                    ENVIRONMENT.BACKBLAZEB2_AWS_ACCESS_KEY_ID,
+                    ENVIRONMENT.BACKBLAZEB2_AWS_SECRET_ACCESS_KEY
+                )
+                self._bucket = self._api.get_bucket_by_id(
+                    ENVIRONMENT.BACKBLAZEB2_BUCKET_ID
+                )
+            except Exception as ex:
+                logger.error(f'Can not acces to backblazeb2 service: {ex}')
+                raise HTTPException(
+                    status_code=status.HTTP_408_REQUEST_TIMEOUT,
+                    detail='Can not connect to backblazeb2 service'
+                )
         
     async def _validate_file(self,data:UploadFile) -> FileValidationResult:
         '''
