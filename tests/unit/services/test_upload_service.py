@@ -30,6 +30,10 @@ class TestBackBlazeB2Service:
         return 'Awaken.m4a'
     
     @pytest.fixture
+    def new_track_name(self):
+        return 'New Name.m4a'
+    
+    @pytest.fixture
     def content_type(self):
         return "audio/x-m4a"
     
@@ -70,6 +74,26 @@ class TestBackBlazeB2Service:
             content_sha1=content_sha1,
             size=file_size,
             upload_timestamp = upload_timestamp
+        )
+        return result
+    
+    @pytest.fixture
+    def track_uploaded_copy(
+        self,
+        new_track_name,
+        content_type,
+        content_sha1,
+        file_size,
+        upload_timestamp
+    ):
+        result = AsyncMock(spec=FileVersion)
+        result.configure_mock(
+            id_='new_file_id',
+            file_name=new_track_name,
+            content_type=content_type,
+            content_sha1=content_sha1,
+            size=file_size,
+            upload_timestamp=upload_timestamp
         )
         return result
     
@@ -148,3 +172,56 @@ class TestBackBlazeB2Service:
         assert track_download.name == track.name
         assert track_download.size == track.size
         assert track_download.url == f'http://www.theplaylist.com/{track_uploaded.file_name}?Authorization=authorization-token'
+
+    @pytest.mark.asyncio
+    async def test_rename_file(
+        self,
+        bucket,
+        api,
+        track,
+        track_uploaded_copy:FileVersion,
+        track_name,
+        new_track_name,
+    ):
+        
+        def mock_copy(*args,**kwargs):
+            return track_uploaded_copy
+        
+        bucket.copy.side_effect = mock_copy
+
+        service = BackBlazeB2Service(True)
+        service._api = api
+        service._bucket = bucket
+
+        new_track = await service.rename_file(track.file_id,track_name,new_track_name)
+        bucket.copy.assert_called_once()
+        api.delete_file_version.assert_called_once_with(track.file_id,track_name,True)
+
+        assert new_track.content_sha1 == track_uploaded_copy.content_sha1
+        assert new_track.content_type == track_uploaded_copy.content_type
+        assert new_track.filename == track_uploaded_copy.file_name
+        assert new_track.id == track_uploaded_copy.id_
+        assert new_track.size == track_uploaded_copy.size
+        uploaded_at = datetime.datetime.fromtimestamp(
+            track_uploaded_copy.upload_timestamp / 1000,
+            datetime.UTC
+        )
+        assert new_track.uploaded_at == uploaded_at
+    
+    @pytest.mark.asyncio
+    async def test_remove_file(
+        self,
+        api,
+        track_name,
+        track
+    ):
+        api.delete_file_version = MagicMock()
+
+        service = BackBlazeB2Service(True)
+
+        service._api = api
+
+        result = await service.remove_file(track.file_id,track_name)
+
+        api.delete_file_version.assert_called_once_with(track.file_id,track_name,True)
+        assert result == True
