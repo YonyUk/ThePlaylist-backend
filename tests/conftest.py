@@ -1,4 +1,7 @@
+import mimetypes
+import time
 from typing import Tuple
+import magic
 import pytest
 from _pytest.logging import LogCaptureFixture
 import logging
@@ -9,9 +12,12 @@ from httpx import AsyncClient,ASGITransport
 from sqlalchemy import Result
 from sqlalchemy.ext.asyncio import create_async_engine,AsyncSession,async_sessionmaker
 from settings import ENVIRONMENT
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 from database import BaseModel,get_database_session
 from repositories import UserRepository,PlaylistRepository,TrackRepository
+from services import get_backblazeb2_service,BackBlazeB2Service
+from unittest.mock import AsyncMock
+from b2sdk.v2 import FileVersion
 
 from main import app
 
@@ -30,6 +36,9 @@ async def async_client():
     
     async client for testing
     '''
+    # adds a mime type for .m4a extension file
+    mimetypes.add_type("audio/x-m4a",'.m4a')
+
     # create the engine to use in the database
     engine = create_async_engine(
         url=f'{DB_ENGINE}+asyncpg://{db_test_url}',
@@ -50,12 +59,52 @@ async def async_client():
         autocommit=False,
     )
 
+    filepath = os.path.join(os.getcwd(),os.path.join('tests',os.path.join('tests_assets','Awaken.m4a')))
+    file_size = os.stat(filepath).st_size
+    content_type,_ = mimetypes.guess_type(filepath)
+
     async def override_get_db():
         async with async_session() as session:
             yield session
             await session.rollback()
     
+    def mock_upload(*args,**kwargs):
+        result = AsyncMock(spec=FileVersion)
+        result.configure_mock(
+            id_='file_id',
+            file_name=kwargs['file_name'],
+            content_type=kwargs['content_type'],
+            content_sha1='sha1',
+            size=file_size,
+            upload_timestamp=time.time()
+        )
+        return result
+    
+    def mock_copy(*args,**kwargs):
+        result = AsyncMock(spec=FileVersion)
+        result.configure_mock(
+            id_=kwargs['file_id'],
+            file_name=kwargs['new_file_name'],
+            content_type=content_type,
+            content_sha1='sha1',
+            size=file_size,
+            upload_timestamp=time.time()
+        )
+        return result
+    
+    async def override_get_backblazeb2_service():
+        service = BackBlazeB2Service(True)
+        service._bucket = MagicMock()
+        service._api = MagicMock()
+        service._bucket.upload.side_effect = mock_upload
+        service._bucket.copy.side_effect = mock_copy
+        try:
+            yield service
+        finally:
+            service = None
+    
     app.dependency_overrides[get_database_session] = override_get_db
+    app.dependency_overrides[get_backblazeb2_service] = override_get_backblazeb2_service
 
     async with AsyncClient(base_url=base_url,transport=ASGITransport(app=app)) as client:
         yield client
