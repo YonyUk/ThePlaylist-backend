@@ -153,23 +153,6 @@ def log_on_failure(request,caplog:LogCaptureFixture):
                 f.write(log_text)
                 f.write('\n\n')
 
-def pytest_collection_modifyitems(items):
-    unit_repositories = list(filter(lambda item:'repositories' in item.fspath.dirname,items))
-    unit_services = list(filter(lambda item:'services' in item.fspath.dirname,items))
-    integration = list(filter(lambda item:'integration' in item.fspath.dirname,items))
-    ordered = sorted(unit_repositories,key=lambda item:item.path.name,reverse=True) \
-        + sorted(unit_services,key=lambda item:item.path.name,reverse=True) \
-        + sorted(integration,key=lambda item:item.path.name,reverse=True)
-
-    def get_item_index(item):
-        for index,test in enumerate(ordered):
-            if test.fspath.dirname == item.fspath.dirname and test.path.name == item.path.name:
-                return index
-        return len(items) + 1
-
-    items.sort(key=lambda item:get_item_index(item))
-    return items
-
 # fixture for database:AsyncSession on unit tests of repositories
 @pytest.fixture
 def mocked_db():

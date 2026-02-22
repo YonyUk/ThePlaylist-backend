@@ -34,6 +34,12 @@
  - Efficient pagination with environment-configurable limits
  - Pydantic models with compile-time validation
 
+### <h2 style="color:#5595b5">Automated tests with pytest</h2>
+
+ - Unit and integration tests
+ - Logging to file for tests failed
+
+
 > ## <h2 style="color:green">**Technical Architecture**</h2>
 
 ### Project Structure
@@ -83,6 +89,12 @@
     |-- settings/
     |           |-- __init__.py
     |           |-- settings.py
+    |-- tests/
+    |           |-- integration
+    |           |-- tests_assets
+    |           |-- unit/
+    |                   |-- repositories/
+    |                   |-- services/
     |-- tools/
     |           |-- __init__.py
     |-- .env
