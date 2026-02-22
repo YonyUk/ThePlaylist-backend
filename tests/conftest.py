@@ -23,11 +23,24 @@ from main import app
 
 dotenv.load_dotenv()
 
+tests_logs_root = os.path.join(
+    os.getcwd(),
+    os.path.join(
+        'tests',
+        os.getenv(
+            'LOGS_ROOT',
+            'root to the tests logs'
+        )
+    )
+)
 db_test_name = os.getenv('DB_TEST_NAME')
 base_url:str = f'{os.getenv('BASE_URL','')}{ENVIRONMENT.GLOBAL_API_PREFIX}'
 db_test_url = f'{ENVIRONMENT.DB_USER}:{ENVIRONMENT.DB_PASSWORD}@{ENVIRONMENT.DB_HOST}:{ENVIRONMENT.DB_PORT}/{db_test_name}'
 
 DB_ENGINE = ENVIRONMENT.DB_ENGINE
+
+if not os.path.exists(tests_logs_root):
+    os.makedirs(tests_logs_root)
 
 @pytest_asyncio.fixture
 async def async_client():
@@ -134,11 +147,28 @@ def log_on_failure(request,caplog:LogCaptureFixture):
         if report.failed:
             log_text = report.longreprtext
             test_name = request.node.name
-            filename = f'logs_failed_{test_name}.log'
+            filename = os.path.join(tests_logs_root,f'{test_name}_logs_failed.log')
             with open(filename,'a',encoding='utf-8') as f:
                 f.write(f"========== Test's logs failed: {test_name} ==========\n")
                 f.write(log_text)
                 f.write('\n\n')
+
+def pytest_collection_modifyitems(items):
+    unit_repositories = list(filter(lambda item:'repositories' in item.fspath.dirname,items))
+    unit_services = list(filter(lambda item:'services' in item.fspath.dirname,items))
+    integration = list(filter(lambda item:'integration' in item.fspath.dirname,items))
+    ordered = sorted(unit_repositories,key=lambda item:item.path.name,reverse=True) \
+        + sorted(unit_services,key=lambda item:item.path.name,reverse=True) \
+        + sorted(integration,key=lambda item:item.path.name,reverse=True)
+
+    def get_item_index(item):
+        for index,test in enumerate(ordered):
+            if test.fspath.dirname == item.fspath.dirname and test.path.name == item.path.name:
+                return index
+        return len(items) + 1
+
+    items.sort(key=lambda item:get_item_index(item))
+    return items
 
 # fixture for database:AsyncSession on unit tests of repositories
 @pytest.fixture
