@@ -1,8 +1,7 @@
 import os
 from pathlib import Path
 import pytest
-from httpx import AsyncClient,Response
-from fastapi import UploadFile
+from httpx import AsyncClient
 
 from schemas import (
     UserSchema,
